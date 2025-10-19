@@ -1,0 +1,14 @@
+{
+  "id": "emojiLauncher",
+  "name": "Emoji & Unicode Launcher",
+  "description": "Search and copy emojis and unicode characters",
+  "version": "1.0.0",
+  "author": "devnullvoid",
+  "icon": "emoji_emotions",
+  "type": "launcher",
+  "capabilities": ["emoji-search", "unicode-search"],
+  "component": "./EmojiLauncher.qml",
+  "settings": "./EmojiLauncherSettings.qml",
+  "trigger": ":",
+  "permissions": ["settings_read", "settings_write"]
+}
