@@ -431,7 +431,7 @@ Item {
                 emoji.keywords.some(k => k.includes(lowerQuery))) {
                 items.push({
                     name: emoji.emoji + "  " + emoji.name,
-                    icon: "emoji_emotions",
+                    icon: "smiley",
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"]
@@ -447,7 +447,7 @@ Item {
                 unicode.keywords.some(k => k.includes(lowerQuery))) {
                 items.push({
                     name: unicode.char + "  " + unicode.name,
-                    icon: "text_fields",
+                    icon: "translate",
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"]
