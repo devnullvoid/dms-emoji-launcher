@@ -2,6 +2,8 @@
 
 A DankMaterialShell launcher plugin that provides quick access to 300+ emojis and 100+ unicode characters with instant clipboard copying.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - **300+ Searchable Emojis** - Access popular emojis with smart keyword search
