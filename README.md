@@ -1,12 +1,12 @@
 # Emoji & Unicode Launcher
 
-A DankMaterialShell launcher plugin that provides quick access to 300+ emojis and 100+ unicode characters with instant clipboard copying.
+A DankMaterialShell launcher plugin that provides quick access to 919 emojis and 100+ unicode characters with instant clipboard copying.
 
 ![Emoji & Unicode Launcher Screenshot](screenshot.png)
 
 ## Features
 
-- **300+ Searchable Emojis** - Access popular emojis with smart keyword search
+- **919 Searchable Emojis** - Access a comprehensive collection of emojis with smart keyword search
 - **100+ Unicode Characters** - Math symbols, currency signs, arrows, Greek letters, and more
 - **Instant Copy** - One-click copy to clipboard with visual confirmation
 - **Smart Search** - Search by name, character, or keywords
@@ -73,14 +73,18 @@ Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
 ## Character Database
 
-### Emojis (300+)
-- Faces & emotions
-- Hearts & love
+### Emojis (919)
+- Faces & emotions (all variations)
+- Hearts & love symbols
 - Hands & gestures
 - Animals & nature
 - Food & drink
+- Travel & places
 - Activities & objects
 - Symbols & flags
+- Numbers & arrows
+- Zodiac signs
+- And much more!
 
 ### Unicode Characters (100+)
 - **Math**: ∞ √ ∑ ∫ ∂ π ≈ ≠ ≤ ≥
@@ -112,6 +116,10 @@ Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 ## Contributing
 
 Found a bug or want to add more characters? Open an issue or submit a pull request!
+
+## Credits
+
+Emoji database sourced from [Terminal Root's emoji collection](https://terminalroot.com/emojis.txt) - a comprehensive list of emojis with searchable names.
 
 ## License
 
