@@ -2,6 +2,8 @@
 
 A DankMaterialShell launcher plugin that provides quick access to 300+ emojis and 100+ unicode characters with instant clipboard copying.
 
+![Emoji & Unicode Launcher Screenshot](screenshot.png)
+
 ## Features
 
 - **300+ Searchable Emojis** - Access popular emojis with smart keyword search
@@ -97,7 +99,7 @@ Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
 ## Compatibility
 
-- **Compositors**: Niri, Hyprland, Sway, and any Wayland compositor
+- **Compositors**: Niri and Hyprland
 - **Distros**: Universal - works on any Linux distribution
 
 ## Technical Details
