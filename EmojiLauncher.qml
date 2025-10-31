@@ -1066,9 +1066,10 @@ Item {
                 emoji.emoji.includes(query) ||
                 emoji.keywords.some(k => k.includes(lowerQuery))) {
                 items.push({
-                    name: emoji.emoji + "  " + emoji.name,
+                    name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
+                    icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"]
                 })
             }
@@ -1081,9 +1082,10 @@ Item {
                 unicode.char.includes(query) ||
                 unicode.keywords.some(k => k.includes(lowerQuery))) {
                 items.push({
-                    name: unicode.char + "  " + unicode.name,
+                    name: unicode.name,
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
+                    icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"]
                 })
             }
