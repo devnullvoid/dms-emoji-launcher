@@ -162,13 +162,13 @@ FocusScope {
                 leftPadding: 16
 
                 StyledText {
-                    text: "• 300+ emojis with searchable names and keywords"
+                    text: "• 1k+ emojis & unicode symbols (faces, tools, math, currency)"
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                 }
 
                 StyledText {
-                    text: "• 100+ unicode characters (symbols, math, currency, etc.)"
+                    text: "• Nerd Font glyph catalog for launcher / terminal icons"
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                 }

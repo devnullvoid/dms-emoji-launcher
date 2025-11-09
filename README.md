@@ -1,13 +1,14 @@
 # Emoji & Unicode Launcher
 
-A DankMaterialShell launcher plugin that provides quick access to 919 emojis and 100+ unicode characters with instant clipboard copying.
+A DankMaterialShell launcher plugin that provides quick access to thousands of emojis, mathematical symbols, and Nerd Font glyphs with instant clipboard copying.
 
 ![Emoji & Unicode Launcher Screenshot](screenshot.png)
 
 ## Features
 
-- **919 Searchable Emojis** - Access a comprehensive collection of emojis with smart keyword search
-- **100+ Unicode Characters** - Math symbols, currency signs, arrows, Greek letters, and more
+- **Expanded Emoji Catalog** - 900+ curated emoji entries combined with the bundled emoji dataset for complete coverage (gear, toolbox, etc.)
+- **Unicode & Math Symbols** - Hundreds of useful unicode characters from arrows to operators and currency signs
+- **Nerd Font Glyphs** - Searchable Nerd Font icons for launcher, terminal, and code workflows
 - **Instant Copy** - One-click copy to clipboard with visual confirmation
 - **Smart Search** - Search by name, character, or keywords
 - **Configurable Trigger** - Default `:` or set your own trigger (or disable for always-on)
@@ -73,27 +74,21 @@ Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
 ## Character Database
 
-### Emojis (919)
-- Faces & emotions (all variations)
-- Hearts & love symbols
-- Hands & gestures
-- Animals & nature
-- Food & drink
-- Travel & places
-- Activities & objects
-- Symbols & flags
-- Numbers & arrows
-- Zodiac signs
-- And much more!
+### Data Sources
+- `data/emojis.txt` — comprehensive emoji list (Terminal Root)
+- `data/math.txt` — math and general-purpose unicode symbols
+- `data/nerdfont.txt` — curated Nerd Font glyph export
 
-### Unicode Characters (100+)
-- **Math**: ∞ √ ∑ ∫ ∂ π ≈ ≠ ≤ ≥
-- **Currency**: € £ ¥ ₹ ₽ ₩
-- **Arrows**: → ← ↑ ↓ ↔ ⇒ ⇐
-- **Symbols**: © ® ™ § ¶ † ‡ • ◦
-- **Greek**: α β γ δ ε θ λ μ σ Ω
-- **Quotes**: … – —
-- **Music**: ♪ ♫ ♬ ♭ ♮ ♯
+All files ship with the plugin, so search works fully offline.
+
+### Highlights
+- **Emoji coverage:** faces, hands, tools, activities, symbols, and flags (including gear ⚙️ and toolbox 🧰)
+- **Unicode symbols:** math operators, arrows, currency, Greek letters, quotes, and miscellaneous symbols
+- **Nerd Font glyphs:** VS Code Codicons, development icons, and other monospace-friendly glyphs for terminal/theming
+
+### Updating the catalog
+1. Modify the plain-text sources in `data/` (`emojis.txt`, `math.txt`, `nerdfont.txt`).
+2. Run `scripts/generate_catalog.py` to rebuild `catalog.js` (the file bundled with the plugin). The script parses the text files, normalizes names, and refreshes search keywords.
 
 ## Requirements
 

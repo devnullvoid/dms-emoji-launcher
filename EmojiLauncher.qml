@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.Services
+import "catalog.js" as CatalogData
 
 Item {
     id: root
@@ -1049,11 +1050,49 @@ Item {
         {char: "🜃", name: "Alchemical Symbol for Earth", keywords: ["earth", "alchemy"]}
     ]
 
+    property var nerdfontGlyphs: []
+
     Component.onCompleted: {
         if (pluginService) {
             trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":")
         }
+        loadBundledData()
     }
+
+    function loadBundledData() {
+        mergeEntries(emojiDatabase, CatalogData.getEmojiEntries(), "emoji")
+        mergeEntries(unicodeCharacters, CatalogData.getUnicodeEntries(), "char")
+        const glyphs = CatalogData.getNerdFontEntries()
+        if (glyphs.length > 0) {
+            nerdfontGlyphs = glyphs
+        }
+        itemsChanged()
+    }
+
+    function mergeEntries(target, additions, keyField) {
+        if (!Array.isArray(target) || !Array.isArray(additions) || additions.length === 0) {
+            return
+        }
+
+        const seen = {}
+        for (let i = 0; i < target.length; i++) {
+            const key = target[i][keyField]
+            if (key) {
+                seen[key] = true
+            }
+        }
+
+        for (let i = 0; i < additions.length; i++) {
+            const entry = additions[i]
+            const key = entry[keyField]
+            if (!key || seen[key]) {
+                continue
+            }
+            target.push(entry)
+            seen[key] = true
+        }
+    }
+
 
     function getItems(query) {
         const items = []
@@ -1086,6 +1125,22 @@ Item {
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
+                    categories: ["Emoji & Unicode Launcher"]
+                })
+            }
+        }
+
+        for (let i = 0; i < nerdfontGlyphs.length; i++) {
+            const glyph = nerdfontGlyphs[i]
+            if (!query ||
+                glyph.name.toLowerCase().includes(lowerQuery) ||
+                glyph.char.includes(query) ||
+                glyph.keywords.some(k => k.includes(lowerQuery))) {
+                items.push({
+                    name: glyph.name + " (Nerd Font)",
+                    comment: glyph.keywords.join(", "),
+                    action: "copy:" + glyph.char,
+                    icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"]
                 })
             }
