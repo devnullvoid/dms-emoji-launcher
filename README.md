@@ -84,7 +84,7 @@ All files ship with the plugin, so search works fully offline.
 ### Highlights
 - **Emoji coverage:** faces, hands, tools, activities, symbols, and flags (including gear ⚙️ and toolbox 🧰)
 - **Unicode symbols:** math operators, arrows, currency, Greek letters, quotes, and miscellaneous symbols
-- **Nerd Font glyphs:** VS Code Codicons, development icons, and other monospace-friendly glyphs for terminal/theming
+- **Nerd Font glyphs:** VS Code Codicons, Powerline (ple-) separators, development icons, and other monospace-friendly glyphs for terminal/theming
 
 ### Updating the catalog
 1. Modify the plain-text sources in `data/` (`emojis.txt`, `math.txt`, `nerdfont.txt`).

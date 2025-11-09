@@ -41,12 +41,25 @@ def parse_unicode(path: Path) -> list[dict]:
 
 
 def parse_nerdfont(path: Path) -> list[dict]:
-    return _parse_symbol_file(
+    def extra_keywords(raw: str) -> list[str]:
+        extras = ["nerdfont", raw]
+        if raw.startswith("ple-"):
+            extras.extend(["powerline", "ple"])
+        return extras
+
+    entries = _parse_symbol_file(
         path,
         key_name="char",
         preprocess_name=lambda name: re.sub(r"[_-]+", " ", name).strip(),
-        extra_keywords=lambda raw: ["nerdfont", raw],
+        extra_keywords=extra_keywords,
     )
+
+    for entry in entries:
+        name = entry.get("name", "")
+        if name.startswith("Ple "):
+            entry["name"] = "Powerline " + name[4:]
+
+    return entries
 
 
 def _parse_symbol_file(
