@@ -1078,18 +1078,60 @@ Item {
         for (let i = 0; i < target.length; i++) {
             const key = target[i][keyField]
             if (key) {
-                seen[key] = true
+                seen[key] = target[i]
             }
         }
 
         for (let i = 0; i < additions.length; i++) {
             const entry = additions[i]
-            const key = entry[keyField]
-            if (!key || seen[key]) {
+            if (!entry) {
                 continue
             }
-            target.push(entry)
-            seen[key] = true
+
+            const key = entry[keyField]
+            if (!key) {
+                continue
+            }
+
+            const existing = seen[key]
+            if (existing) {
+                const incomingName = entry.name || ""
+                const existingName = existing.name || ""
+                if (incomingName.length > existingName.length) {
+                    existing.name = incomingName
+                }
+
+                const existingKeywords = Array.isArray(existing.keywords) ? existing.keywords : []
+                const incomingKeywords = Array.isArray(entry.keywords) ? entry.keywords : []
+                const keywordSet = {}
+
+                function normalizeKeyword(keyword) {
+                    if (!keyword || typeof keyword !== "string") {
+                        return ""
+                    }
+                    return keyword.toLowerCase()
+                }
+
+                for (let j = 0; j < existingKeywords.length; j++) {
+                    const normalized = normalizeKeyword(existingKeywords[j])
+                    if (normalized) {
+                        existingKeywords[j] = normalized
+                        keywordSet[normalized] = true
+                    }
+                }
+
+                for (let j = 0; j < incomingKeywords.length; j++) {
+                    const normalized = normalizeKeyword(incomingKeywords[j])
+                    if (normalized && !keywordSet[normalized]) {
+                        existingKeywords.push(normalized)
+                        keywordSet[normalized] = true
+                    }
+                }
+                existing.keywords = existingKeywords
+            } else {
+                target.push(entry)
+                seen[key] = entry
+            }
         }
     }
 
