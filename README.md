@@ -36,6 +36,8 @@ cp -r EmojiLauncher ~/.config/DankMaterialShell/plugins/
 ## Usage
 
 ### Default Trigger Mode
+Note: Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for file search).
+
 1. Open launcher (Ctrl+Space)
 2. Type `:` followed by search query
 3. Examples:
@@ -69,7 +71,8 @@ Configure in settings to show emoji/unicode items without a trigger prefix.
 
 Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
-- **Trigger**: Set custom trigger character (`:`, `;`, `/emoji`, etc.) or disable for always-on mode
+- **Trigger**: Set custom trigger character (`:`, `;`, `em`, etc.) or disable for always-on mode
+  - Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for file search).
 - **No Trigger Mode**: Toggle to show items without trigger prefix
 
 ## Character Database

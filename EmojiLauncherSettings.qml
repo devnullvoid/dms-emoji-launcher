@@ -132,7 +132,14 @@ FocusScope {
                 }
 
                 StyledText {
-                    text: "Examples: :, ;, /emoji, etc."
+                    text: "Examples: :, ;, em, etc."
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    text: "Avoid triggers reserved by DMS or other plugins (e.g., '/' for file search)."
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     anchors.verticalCenter: parent.verticalCenter
