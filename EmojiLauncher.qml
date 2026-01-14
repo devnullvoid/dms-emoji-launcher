@@ -1136,6 +1136,17 @@ Item {
     }
 
 
+    // Returns a sort score for an item (lower = better match)
+    // Exact name/char match: 0, exact keyword match: 1 + keyword index, partial match: 1000
+    function getMatchScore(name, character, keywords, lowerQuery, query) {
+        if (!query) return 1000
+        if (name.toLowerCase() === lowerQuery || character === query) return 0
+        for (var i = 0; i < keywords.length; i++) {
+            if (keywords[i] === lowerQuery) return 1 + i
+        }
+        return 1000
+    }
+
     function getItems(query) {
         const items = []
         const lowerQuery = query ? query.toLowerCase() : ""
@@ -1151,7 +1162,8 @@ Item {
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
-                    categories: ["Emoji & Unicode Launcher"]
+                    categories: ["Emoji & Unicode Launcher"],
+                    _score: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, query)
                 })
             }
         }
@@ -1167,7 +1179,8 @@ Item {
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
-                    categories: ["Emoji & Unicode Launcher"]
+                    categories: ["Emoji & Unicode Launcher"],
+                    _score: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, query)
                 })
             }
         }
@@ -1183,9 +1196,14 @@ Item {
                     comment: glyph.keywords.join(", "),
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
-                    categories: ["Emoji & Unicode Launcher"]
+                    categories: ["Emoji & Unicode Launcher"],
+                    _score: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, query)
                 })
             }
+        }
+
+        if (query) {
+            items.sort((a, b) => a._score - b._score)
         }
 
         return items.slice(0, 50)
