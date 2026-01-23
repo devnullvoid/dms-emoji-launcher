@@ -50,7 +50,7 @@ PluginSettings {
         visible: !noTriggerToggle.value
         settingKey: "trigger"
         label: "Trigger"
-        description: "Prefix character(s) to activate emoji search (e.g., :, ;, /emoji)"
+        description: "Examples: :, ;, em, etc. Avoid triggers reserved by DMS or other plugins (e.g., / for file search)."
         placeholder: ":"
         defaultValue: ":"
     }
