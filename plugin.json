@@ -12,7 +12,7 @@
   ],
   "component": "./EmojiLauncher.qml",
   "settings": "./EmojiLauncherSettings.qml",
-  "trigger": ":",
+  "trigger": ":e",
   "permissions": [
     "settings_read",
     "settings_write"

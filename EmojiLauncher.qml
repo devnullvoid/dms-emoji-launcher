@@ -7,7 +7,7 @@ QtObject {
     id: root
 
     property var pluginService: null
-    property string trigger: ":"
+    property string trigger: ":e"
 
     signal itemsChanged
 
@@ -5186,7 +5186,7 @@ QtObject {
 
     Component.onCompleted: {
         if (pluginService) {
-            trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":");
+            trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         }
         loadBundledData();
     }
