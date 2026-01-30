@@ -16,11 +16,13 @@ def main() -> None:
     emoji_entries = parse_emoji(DATA / "emojis.txt")
     unicode_entries = parse_unicode(DATA / "math.txt")
     nerd_font_entries = parse_nerdfont(DATA / "nerdfont.txt")
+    latin_extended_entries = parse_latin_extended(DATA / "latin-extended.txt")
 
     write_catalog(
         emoji_entries=emoji_entries,
         unicode_entries=unicode_entries,
         nerd_font_entries=nerd_font_entries,
+        latin_extended_entries=latin_extended_entries,
     )
 
 
@@ -37,6 +39,14 @@ def parse_unicode(path: Path) -> list[dict]:
         path,
         key_name="char",
         extra_keywords=lambda raw: [],
+    )
+
+
+def parse_latin_extended(path: Path) -> list[dict]:
+    return _parse_symbol_file(
+        path,
+        key_name="char",
+        extra_keywords=lambda raw: ["latin", "accented"],
     )
 
 
@@ -131,7 +141,7 @@ def build_keywords(raw: str, extras: list[str]) -> list[str]:
     return keywords
 
 
-def write_catalog(*, emoji_entries, unicode_entries, nerd_font_entries) -> None:
+def write_catalog(*, emoji_entries, unicode_entries, nerd_font_entries, latin_extended_entries) -> None:
     OUTPUT.write_text(
         "\n".join(
             [
@@ -142,6 +152,7 @@ def write_catalog(*, emoji_entries, unicode_entries, nerd_font_entries) -> None:
                 f"var emojiEntries = {json.dumps(emoji_entries, ensure_ascii=False)};",
                 f"var unicodeEntries = {json.dumps(unicode_entries, ensure_ascii=False)};",
                 f"var nerdFontEntries = {json.dumps(nerd_font_entries, ensure_ascii=False)};",
+                f"var latinExtendedEntries = {json.dumps(latin_extended_entries, ensure_ascii=False)};",
                 "",
                 "function clone(array) {",
                 "    return array ? array.slice() : [];",
@@ -150,6 +161,7 @@ def write_catalog(*, emoji_entries, unicode_entries, nerd_font_entries) -> None:
                 "function getEmojiEntries() { return clone(emojiEntries); }",
                 "function getUnicodeEntries() { return clone(unicodeEntries); }",
                 "function getNerdFontEntries() { return clone(nerdFontEntries); }",
+                "function getLatinExtendedEntries() { return clone(latinExtendedEntries); }",
             ]
         )
         + "\n",

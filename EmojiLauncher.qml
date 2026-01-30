@@ -5194,6 +5194,7 @@ QtObject {
     function loadBundledData() {
         mergeEntries(emojiDatabase, CatalogData.getEmojiEntries(), "emoji");
         mergeEntries(unicodeCharacters, CatalogData.getUnicodeEntries(), "char");
+        mergeEntries(unicodeCharacters, CatalogData.getLatinExtendedEntries(), "char");
         const glyphs = CatalogData.getNerdFontEntries();
         if (glyphs.length > 0) {
             nerdfontGlyphs = glyphs;
