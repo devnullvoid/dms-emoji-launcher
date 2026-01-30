@@ -43,11 +43,73 @@ def parse_unicode(path: Path) -> list[dict]:
 
 
 def parse_latin_extended(path: Path) -> list[dict]:
-    return _parse_symbol_file(
-        path,
-        key_name="char",
-        extra_keywords=lambda raw: ["latin", "accented"],
-    )
+    """Parse Latin extended file with language-specific keywords."""
+    text = path.read_text(encoding="utf-8")
+    entries: list[dict] = []
+    current_language = None
+
+    # Map comment patterns to language keywords
+    language_map = {
+        "spanish": ["spanish", "español"],
+        "french": ["french", "français"],
+        "portuguese": ["portuguese", "português"],
+        "german": ["german", "deutsch"],
+        "nordic": ["nordic", "scandinavian"],
+        "italian": ["italian", "italiano"],
+        "icelandic": ["icelandic"],
+        "czech": ["czech", "slovak"],
+        "polish": ["polish", "polski"],
+        "romanian": ["romanian"],
+        "hungarian": ["hungarian", "magyar"],
+        "turkish": ["turkish", "türk"],
+        "esperanto": ["esperanto"],
+        "vietnamese": ["vietnamese"],
+    }
+
+    for raw_line in text.splitlines():
+        if not raw_line:
+            continue
+        trimmed = raw_line.strip()
+
+        # Track current language section from comments
+        if trimmed.startswith("#"):
+            comment_lower = trimmed.lower()
+            for lang_key, lang_keywords in language_map.items():
+                if lang_key in comment_lower:
+                    current_language = lang_keywords
+                    break
+            continue
+
+        if not trimmed:
+            continue
+
+        match = re.match(r"^(\S+|\s)\s+(.*)$", raw_line)
+        if not match:
+            continue
+
+        symbol = match.group(1)
+        raw_name = match.group(2).strip()
+
+        if not raw_name or ".." in symbol:
+            continue
+
+        friendly = prettify_name(raw_name)
+
+        # Build keywords with language context
+        extra = ["latin", "accented"]
+        if current_language:
+            extra.extend(current_language)
+
+        keywords = build_keywords(raw_name, extra)
+
+        entry = {
+            "char": symbol,
+            "name": friendly,
+            "keywords": keywords,
+        }
+        entries.append(entry)
+
+    return entries
 
 
 def parse_nerdfont(path: Path) -> list[dict]:
