@@ -7,18 +7,19 @@ A DankMaterialShell launcher plugin that provides quick access to thousands of e
 ## Features
 
 - **Expanded Emoji Catalog** - 900+ curated emoji entries combined with the bundled emoji dataset for complete coverage (gear, toolbox, etc.)
+- **Latin Extended Characters** - 219 accented Latin characters covering Spanish (ñ, á, é), French (à, è, ç), German (ä, ö, ü), Portuguese, Nordic, Polish, Czech, and more
 - **Unicode & Math Symbols** - Hundreds of useful unicode characters from arrows to operators and currency signs
 - **Nerd Font Glyphs** - Searchable Nerd Font icons for launcher, terminal, and code workflows
 - **Instant Copy** - One-click copy to clipboard with visual confirmation
 - **Smart Search** - Search by name, character, or keywords
-- **Configurable Trigger** - Default `:` or set your own trigger (or disable for always-on)
+- **Configurable Trigger** - Default `:e` or set your own trigger (or disable for always-on)
 - **Toast Notifications** - Visual feedback for every action
 
 ## Installation
 
 ### From Plugin Registry (Recommended)
 ```bash
-# Coming soon - will be available via DMS plugin manager
+dms plugins install emojiLauncher
 ```
 
 ### Manual Installation
@@ -39,12 +40,13 @@ cp -r EmojiLauncher ~/.config/DankMaterialShell/plugins/
 Note: Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for file search).
 
 1. Open launcher (Ctrl+Space)
-2. Type `:` followed by search query
+2. Type `:e` followed by search query
 3. Examples:
-   - `:smile` - Find smiling emojis
-   - `:heart` - Find heart emojis
-   - `:copyright` - Find © symbol
-   - `:arrow` - Find arrow characters
+   - `:e smile` - Find smiling emojis
+   - `:e heart` - Find heart emojis
+   - `:e copyright` - Find © symbol
+   - `:e arrow` - Find arrow characters
+   - `:e tilde` - Find ñ, Ñ, and other tilde characters
 4. Select item and press Enter to copy
 
 ### Always-On Mode
@@ -71,7 +73,7 @@ Configure in settings to show emoji/unicode items without a trigger prefix.
 
 Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
-- **Trigger**: Set custom trigger character (`:`, `;`, `em`, etc.) or disable for always-on mode
+- **Trigger**: Set custom trigger character (`:e`, `:`, `;`, `em`, etc.) or disable for always-on mode
   - Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for file search).
 - **No Trigger Mode**: Toggle to show items without trigger prefix
 
@@ -79,6 +81,7 @@ Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
 ### Data Sources
 - `data/emojis.txt` — comprehensive emoji list (Terminal Root)
+- `data/latin-extended.txt` — accented Latin characters for multiple languages
 - `data/math.txt` — math and general-purpose unicode symbols
 - `data/nerdfont.txt` — curated Nerd Font glyph export
 
@@ -86,11 +89,12 @@ All files ship with the plugin, so search works fully offline.
 
 ### Highlights
 - **Emoji coverage:** faces, hands, tools, activities, symbols, and flags (including gear ⚙️ and toolbox 🧰)
+- **Latin extended:** accented characters for Spanish, French, German, Portuguese, Nordic, Polish, Czech, Romanian, Hungarian, Turkish, Vietnamese, and more
 - **Unicode symbols:** math operators, arrows, currency, Greek letters, quotes, and miscellaneous symbols
 - **Nerd Font glyphs:** VS Code Codicons, Powerline (ple-) separators, development icons, and other monospace-friendly glyphs for terminal/theming
 
 ### Updating the catalog
-1. Modify the plain-text sources in `data/` (`emojis.txt`, `math.txt`, `nerdfont.txt`).
+1. Modify the plain-text sources in `data/` (`emojis.txt`, `latin-extended.txt`, `math.txt`, `nerdfont.txt`).
 2. Run `scripts/generate_catalog.py` to rebuild `catalog.js` (the file bundled with the plugin). The script parses the text files, normalizes names, and refreshes search keywords.
 
 ## Requirements
@@ -107,7 +111,7 @@ All files ship with the plugin, so search works fully offline.
 ## Technical Details
 
 - **Type**: Launcher plugin
-- **Trigger**: `:` (configurable)
+- **Trigger**: `:e` (configurable)
 - **Language**: QML (Qt Modeling Language)
 - **Dependencies**: None (uses built-in character database)
 
