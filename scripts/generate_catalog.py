@@ -191,7 +191,8 @@ def build_keywords(raw: str, extras: list[str]) -> list[str]:
             keywords.append(lowered)
 
     def tokenize(value: str) -> list[str]:
-        return [part for part in re.split(r"[^a-zA-Z0-9+]+", value.lower()) if part]
+        # Keep Unicode letters (including accented), numbers, and +
+        return [part for part in re.split(r"[^\w+]+", value.lower(), flags=re.UNICODE) if part]
 
     for token in tokenize(raw):
         add_token(token)
