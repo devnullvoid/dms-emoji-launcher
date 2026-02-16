@@ -5295,7 +5295,7 @@ QtObject {
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _score: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, query)
                 });
             }
         }
@@ -5309,7 +5309,7 @@ QtObject {
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _score: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, query)
                 });
             }
         }
@@ -5323,13 +5323,13 @@ QtObject {
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _score: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, query)
                 });
             }
         }
 
         if (query)
-            items.sort((a, b) => a._score - b._score);
+            items.sort((a, b) => a._preScored - b._preScored);
 
         return items.slice(0, 50);
     }
