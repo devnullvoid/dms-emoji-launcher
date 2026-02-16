@@ -2,7 +2,7 @@
   "id": "emojiLauncher",
   "name": "Emoji & Unicode Launcher",
   "description": "Search and copy emojis and unicode characters",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "author": "devnullvoid",
   "icon": "emoji_emotions",
   "type": "launcher",
