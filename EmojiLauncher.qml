@@ -8,6 +8,7 @@ QtObject {
 
     property var pluginService: null
     property string trigger: ":e"
+    property bool useDMS: false
 
     signal itemsChanged
 
@@ -5187,6 +5188,7 @@ QtObject {
     Component.onCompleted: {
         if (pluginService) {
             trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
+            useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", false);
         }
         loadBundledData();
     }
@@ -5340,10 +5342,11 @@ QtObject {
         const actionParts = item.action.split(":");
         const actionType = actionParts[0];
         const actionData = actionParts.slice(1).join(":");
+        const clipCmd = useDMS ? "dms cl copy" : "wl-copy";
 
         switch (actionType) {
         case "copy":
-            Quickshell.execDetached(["sh", "-c", "echo -n '" + actionData + "' | wl-copy"]);
+            Quickshell.execDetached(["sh", "-c", "echo -n '" + actionData + "' | " + clipCmd]);
             ToastService?.showInfo("Copied " + actionData + " to clipboard");
             break;
         }

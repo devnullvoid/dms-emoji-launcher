@@ -62,6 +62,21 @@ PluginSettings {
         opacity: 0.3
     }
 
+    ToggleSetting {
+        id: useDMSToggle
+        settingKey: "useDMS"
+        label: "Clipboard Program to use"
+        description: value ? "dms clipboard" : "wl-copy"
+        defaultValue: false
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Theme.outline
+        opacity: 0.3
+    }
+
     StyledText {
         width: parent.width
         text: "Features"
