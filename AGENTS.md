@@ -8,6 +8,15 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 **Default Trigger**: `:e`
 **Version**: 1.3.1
 
+## Recent Maintenance Notes (2026-02-18)
+- The `Always Active`/`noTrigger` setting has been removed from settings UI.
+- Default trigger remains `:e` (conflict-avoidance with upstream launcher behavior).
+- Added configurable clipboard backend:
+  - default: DMS clipboard command (`dms cl copy`)
+  - fallback: `wl-copy` when DMS command is unavailable
+- Added launcher paste hook support (`getPasteText`/`getPasteArgs`) so `Shift+Enter` performs direct paste from launcher selection.
+- Trigger defaults and settings usage examples are aligned to `:e`.
+
 ## Critical Information for AI Agents
 
 ### ⚠️ DO NOT READ catalog.js
