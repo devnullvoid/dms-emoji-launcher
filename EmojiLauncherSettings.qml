@@ -7,6 +7,12 @@ PluginSettings {
     id: root
     pluginId: "emojiLauncher"
 
+    Component.onCompleted: {
+        const currentTrigger = root.loadValue("trigger", ":e");
+        if (!currentTrigger || currentTrigger.trim().length === 0)
+            root.saveValue("trigger", ":e");
+    }
+
     StyledText {
         width: parent.width
         text: "Emoji & Unicode Launcher"
@@ -30,29 +36,28 @@ PluginSettings {
         opacity: 0.3
     }
 
-    ToggleSetting {
-        id: noTriggerToggle
-        settingKey: "noTrigger"
-        label: "Always Active"
-        description: value ? "Items will always show in the launcher (no trigger needed)." : "Set the trigger text to activate this plugin. Type the trigger in the launcher to filter to emojis and unicode characters."
-        defaultValue: false
-        onValueChanged: {
-            if (value) {
-                root.saveValue("trigger", "");
-            } else {
-                root.saveValue("trigger", triggerSetting.value || ":");
-            }
-        }
-    }
-
     StringSetting {
         id: triggerSetting
-        visible: !noTriggerToggle.value
         settingKey: "trigger"
         label: "Trigger"
         description: "Examples: :, ;, em, etc. Avoid triggers reserved by DMS or other plugins (e.g., / for file search)."
-        placeholder: ":"
-        defaultValue: ":"
+        placeholder: ":e"
+        defaultValue: ":e"
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Theme.outline
+        opacity: 0.3
+    }
+
+    ToggleSetting {
+        id: useDMSToggle
+        settingKey: "useDMS"
+        label: "Clipboard Program"
+        description: value ? "Use DMS clipboard command (dms cl copy) with wl-copy fallback." : "Use wl-copy for clipboard operations."
+        defaultValue: true
     }
 
     Rectangle {
@@ -109,7 +114,7 @@ PluginSettings {
         bottomPadding: Theme.spacingL
 
         Repeater {
-            model: ["1. Open Launcher (Ctrl+Space or click launcher button)", noTriggerToggle.value ? "2. Emojis are always visible in the launcher" : "2. Type your trigger (default: :) to filter to emojis/unicode", noTriggerToggle.value ? "3. Search by typing: 'smile', 'heart', 'copyright', etc." : "3. Search by typing: ': smile', ': heart', ': copyright', etc.", "4. Select and press Enter to copy to clipboard"]
+            model: ["1. Open Launcher (Ctrl+Space or click launcher button)", "2. Type your trigger (default: :e) to filter to emojis/unicode", "3. Search by typing: ':e smile', ':e heart', ':e copyright', etc.", "4. Press Enter to copy to clipboard", "5. Press Shift+Enter to paste directly into the focused app"]
 
             StyledText {
                 required property string modelData

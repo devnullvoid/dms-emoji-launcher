@@ -8,6 +8,7 @@ QtObject {
 
     property var pluginService: null
     property string trigger: ":e"
+    property bool useDMS: true
 
     signal itemsChanged
 
@@ -5185,10 +5186,30 @@ QtObject {
     property var nerdfontGlyphs: []
 
     Component.onCompleted: {
-        if (pluginService) {
-            trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
-        }
+        loadSettings();
         loadBundledData();
+    }
+
+    onPluginServiceChanged: {
+        if (pluginService)
+            loadSettings();
+    }
+
+    property var pluginDataChangedConnection: Connections {
+        target: pluginService
+        enabled: pluginService !== null
+
+        function onPluginDataChanged(changedPluginId) {
+            if (changedPluginId === "emojiLauncher")
+                loadSettings();
+        }
+    }
+
+    function loadSettings() {
+        if (!pluginService)
+            return;
+        trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
+        useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
     }
 
     function loadBundledData() {
@@ -5340,13 +5361,37 @@ QtObject {
         const actionParts = item.action.split(":");
         const actionType = actionParts[0];
         const actionData = actionParts.slice(1).join(":");
+        const copyCommand = useDMS
+            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
+            : "printf '%s' \"$1\" | wl-copy";
 
         switch (actionType) {
         case "copy":
-            Quickshell.execDetached(["sh", "-c", "echo -n '" + actionData + "' | wl-copy"]);
+            Quickshell.execDetached(["sh", "-c", copyCommand, "copy", actionData]);
             ToastService?.showInfo("Copied " + actionData + " to clipboard");
             break;
         }
+    }
+
+    function getPasteText(item) {
+        if (!item?.action)
+            return null;
+        const actionParts = item.action.split(":");
+        if (actionParts[0] !== "copy")
+            return null;
+        return actionParts.slice(1).join(":");
+    }
+
+    function getPasteArgs(item) {
+        const text = getPasteText(item);
+        if (!text)
+            return null;
+
+        const copyCommand = useDMS
+            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
+            : "printf '%s' \"$1\" | wl-copy";
+
+        return ["sh", "-c", copyCommand, "copy", text];
     }
 
     onTriggerChanged: {
@@ -5354,5 +5399,11 @@ QtObject {
             return;
         pluginService.savePluginData("emojiLauncher", "trigger", trigger);
         itemsChanged();
+    }
+
+    onUseDMSChanged: {
+        if (!pluginService)
+            return;
+        pluginService.savePluginData("emojiLauncher", "useDMS", useDMS);
     }
 }
