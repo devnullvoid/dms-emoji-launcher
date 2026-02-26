@@ -53,6 +53,21 @@ PluginSettings {
     }
 
     ToggleSetting {
+        id: pasteOnSelectToggle
+        settingKey: "pasteOnSelect"
+        label: "Paste on Select"
+        description: value ? "Immediately paste as well as copying to the clipboard. Requires wtype" : "Use shift+return to directly paste."
+        defaultValue: false
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Theme.outline
+        opacity: 0.3
+    }
+
+    ToggleSetting {
         id: useDMSToggle
         settingKey: "useDMS"
         label: "Clipboard Program"
