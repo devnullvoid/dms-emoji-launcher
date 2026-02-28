@@ -8,6 +8,7 @@ QtObject {
 
     property var pluginService: null
     property string trigger: ":e"
+    property bool pasteOnSelect: false
     property bool useDMS: true
 
     signal itemsChanged
@@ -5209,6 +5210,7 @@ QtObject {
         if (!pluginService)
             return;
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
+        pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
     }
 
@@ -5365,6 +5367,9 @@ QtObject {
             ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
             : "printf '%s' \"$1\" | wl-copy";
 
+        if (pasteOnSelect)
+            Quickshell.execDetached(["wtype", actionData]);
+
         switch (actionType) {
         case "copy":
             Quickshell.execDetached(["sh", "-c", copyCommand, "copy", actionData]);
@@ -5399,6 +5404,12 @@ QtObject {
             return;
         pluginService.savePluginData("emojiLauncher", "trigger", trigger);
         itemsChanged();
+    }
+
+    onPasteOnSelectChanged: {
+        if (!pluginService)
+            return;
+        pluginService.savePluginData("emojiLauncher", "pasteOnSelect", pasteOnSelect);
     }
 
     onUseDMSChanged: {
