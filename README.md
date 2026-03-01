@@ -11,8 +11,8 @@ A DankMaterialShell launcher plugin that provides quick access to thousands of e
 - **Unicode & Math Symbols** - Hundreds of useful unicode characters from arrows to operators and currency signs
 - **Nerd Font Glyphs** - Searchable Nerd Font icons for launcher, terminal, and code workflows
 - **Instant Copy** - One-click copy to clipboard with visual confirmation
-- **Smart Search** - Search by name, character, or keywords
-- **Configurable Trigger** - Default `:e` or set your own trigger (or disable for always-on)
+- **Smart Search** - Search by name, character, or keywords with tokenized multi-word matching (for example: `french e`, `latin tilde n`)
+- **Configurable Trigger** - Default `:e` or set your own trigger
 - **Toast Notifications** - Visual feedback for every action
 
 ## Installation
@@ -47,10 +47,9 @@ Note: Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for fil
    - `:e copyright` - Find © symbol
    - `:e arrow` - Find arrow characters
    - `:e tilde` - Find ñ, Ñ, and other tilde characters
+   - `:e french e` - Find French accented e variants near the top
+   - `:e latin tilde n` - Find ñ / Ñ near the top
 4. Select item and press Enter to copy
-
-### Always-On Mode
-Configure in settings to show emoji/unicode items without a trigger prefix.
 
 ## Search Examples
 
@@ -73,9 +72,10 @@ Configure in settings to show emoji/unicode items without a trigger prefix.
 
 Access settings via DMS Settings → Plugins → Emoji & Unicode Launcher:
 
-- **Trigger**: Set custom trigger character (`:e`, `:`, `;`, `em`, etc.) or disable for always-on mode
+- **Trigger**: Set custom trigger character (`:e`, `:`, `;`, `em`, etc.)
   - Avoid triggers reserved by DMS or other plugins (e.g., `/` is used for file search).
-- **No Trigger Mode**: Toggle to show items without trigger prefix
+- **Paste on Select**: Type selected character directly via `wtype` after copy
+- **Clipboard Backend**: Prefer `dms cl copy` with `wl-copy` fallback
 
 ## Character Database
 

@@ -5291,67 +5291,188 @@ QtObject {
         }
     }
 
+    function tokenizeQuery(query) {
+        if (!query)
+            return [];
+        const trimmed = query.trim().toLowerCase();
+        if (trimmed.length === 0)
+            return [];
+        return trimmed.split(/\s+/).filter(token => token.length > 0);
+    }
+
+    function normalizeKeywords(keywords) {
+        if (!Array.isArray(keywords))
+            return [];
+        const normalized = [];
+        for (let i = 0; i < keywords.length; i++) {
+            normalized.push(String(keywords[i]).toLowerCase());
+        }
+        return normalized;
+    }
+
+    function extractBaseLetter(nameLower) {
+        const match = nameLower.match(/\bletter\s+([a-z0-9])\b/);
+        return match ? match[1] : "";
+    }
+
+    function tokenCost(token, nameLower, character, keywordsLower) {
+        let best = 100000;
+        const characterLower = String(character || "").toLowerCase();
+        const baseLetter = extractBaseLetter(nameLower);
+
+        if (characterLower === token)
+            return 0;
+
+        if (token.length === 1) {
+            if (baseLetter === token)
+                return 3;
+            for (let i = 0; i < keywordsLower.length; i++) {
+                if (keywordsLower[i] === token)
+                    return 4 + Math.min(i, 10);
+            }
+            return 100000;
+        }
+
+        if (nameLower === token)
+            best = 2;
+        else if (nameLower.startsWith(token))
+            best = Math.min(best, 8);
+        else if (nameLower.includes(token))
+            best = Math.min(best, 16);
+
+        for (let i = 0; i < keywordsLower.length; i++) {
+            const keyword = keywordsLower[i];
+            if (keyword === token)
+                best = Math.min(best, 1 + Math.min(i, 10));
+            else if (keyword.startsWith(token))
+                best = Math.min(best, 6 + Math.min(i, 15));
+            else if (keyword.includes(token))
+                best = Math.min(best, 14 + Math.min(i, 15));
+        }
+
+        return best;
+    }
+
+    function entryMatchesQuery(name, character, keywords, lowerQuery, queryTokens, query) {
+        if (!query)
+            return true;
+
+        const nameLower = String(name || "").toLowerCase();
+        const keywordsLower = normalizeKeywords(keywords);
+
+        if (nameLower.includes(lowerQuery) || character.includes(query))
+            return true;
+
+        for (let i = 0; i < keywordsLower.length; i++) {
+            if (keywordsLower[i].includes(lowerQuery))
+                return true;
+        }
+
+        if (queryTokens.length <= 1)
+            return false;
+
+        for (let i = 0; i < queryTokens.length; i++) {
+            if (tokenCost(queryTokens[i], nameLower, character, keywordsLower) >= 100000)
+                return false;
+        }
+        return true;
+    }
+
     // Returns a sort score for an item (lower = better match)
-    // Exact name/char match: 0, exact keyword match: 1 + keyword index, partial match: 1000
-    function getMatchScore(name, character, keywords, lowerQuery, query) {
+    function getMatchScore(name, character, keywords, lowerQuery, queryTokens, query) {
         if (!query)
             return 1000;
-        if (name.toLowerCase() === lowerQuery || character === query)
+
+        const nameLower = String(name || "").toLowerCase();
+        const keywordsLower = normalizeKeywords(keywords);
+
+        if (character === query)
             return 0;
-        for (let i = 0; i < keywords.length; i++) {
-            if (keywords[i] === lowerQuery)
-                return 1 + i;
+        if (nameLower === lowerQuery)
+            return 1;
+
+        for (let i = 0; i < keywordsLower.length; i++) {
+            if (keywordsLower[i] === lowerQuery)
+                return 2 + i;
         }
-        return 1000;
+
+        let best = 1000;
+        if (nameLower.startsWith(lowerQuery))
+            best = Math.min(best, 20);
+        else if (nameLower.includes(lowerQuery))
+            best = Math.min(best, 30);
+
+        for (let i = 0; i < keywordsLower.length; i++) {
+            const keyword = keywordsLower[i];
+            if (keyword.startsWith(lowerQuery))
+                best = Math.min(best, 24 + i);
+            else if (keyword.includes(lowerQuery))
+                best = Math.min(best, 34 + i);
+        }
+
+        if (queryTokens.length > 1) {
+            let tokenAggregate = 0;
+            for (let i = 0; i < queryTokens.length; i++) {
+                const cost = tokenCost(queryTokens[i], nameLower, character, keywordsLower);
+                if (cost >= 100000)
+                    return 1000;
+                tokenAggregate += cost;
+            }
+            best = Math.min(best, 60 + tokenAggregate);
+        }
+
+        return best;
     }
 
     function getItems(query) {
         const items = [];
-        const lowerQuery = query ? query.toLowerCase() : "";
+        const trimmedQuery = query ? query.trim() : "";
+        const lowerQuery = trimmedQuery.toLowerCase();
+        const queryTokens = tokenizeQuery(trimmedQuery);
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
-            if (!query || emoji.name.toLowerCase().includes(lowerQuery) || emoji.emoji.includes(query) || emoji.keywords.some(k => k.includes(lowerQuery))) {
+            if (entryMatchesQuery(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)) {
                 items.push({
                     name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)
                 });
             }
         }
 
         for (let i = 0; i < unicodeCharacters.length; i++) {
             const unicode = unicodeCharacters[i];
-            if (!query || unicode.name.toLowerCase().includes(lowerQuery) || unicode.char.includes(query) || unicode.keywords.some(k => k.includes(lowerQuery))) {
+            if (entryMatchesQuery(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)) {
                 items.push({
                     name: unicode.name,
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)
                 });
             }
         }
 
         for (let i = 0; i < nerdfontGlyphs.length; i++) {
             const glyph = nerdfontGlyphs[i];
-            if (!query || glyph.name.toLowerCase().includes(lowerQuery) || glyph.char.includes(query) || glyph.keywords.some(k => k.includes(lowerQuery))) {
+            if (entryMatchesQuery(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery)) {
                 items.push({
                     name: glyph.name + " (Nerd Font)",
                     comment: glyph.keywords.join(", "),
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, query)
+                    _preScored: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery)
                 });
             }
         }
 
-        if (query)
+        if (trimmedQuery.length > 0)
             items.sort((a, b) => a._preScored - b._preScored);
 
         return items.slice(0, 50);

@@ -6,9 +6,16 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 **Language**: QML (Qt Modeling Language) with Python build scripts
 **Type**: Launcher plugin for DankMaterialShell
 **Default Trigger**: `:e`
-**Version**: 1.3.1
+**Version**: 1.5.1
 
-## Recent Maintenance Notes (2026-02-18)
+## Recent Maintenance Notes (2026-03-01)
+- Improved launcher search matching/ranking for multi-word queries:
+  - tokenized matching across name/char/keywords (not just contiguous substring)
+  - stronger ranking for language+letter intent (for example: `french e`, `latin tilde n`)
+- Better relevance ordering for Latin Extended searches with single-letter tokens in multi-word queries.
+- Existing behavior retained: default trigger is `:e`, configurable in settings.
+
+## Previous Maintenance Notes (2026-02-18)
 - The `Always Active`/`noTrigger` setting has been removed from settings UI.
 - Default trigger remains `:e` (conflict-avoidance with upstream launcher behavior).
 - Added configurable clipboard backend:
@@ -196,7 +203,7 @@ cp catalog.js ~/.config/DankMaterialShell/plugins/emojiLauncher/
 **Location**: `plugin.json` line 5
 
 **Versioning scheme**: Semantic versioning (major.minor.patch)
-- Patch (1.3.x): Bug fixes, keyword improvements
+- Patch (1.5.x): Bug fixes, keyword/search improvements
 - Minor (1.x.0): New features, new character categories
 - Major (x.0.0): Breaking changes, architecture changes
 
@@ -361,6 +368,6 @@ When making changes:
 
 ---
 
-**Last Updated**: 2026-01-30
+**Last Updated**: 2026-03-01
 **Maintainer**: devnullvoid
 **AI-Friendly**: This document is designed to help AI agents quickly understand and work with this project.
