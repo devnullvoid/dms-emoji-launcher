@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUTPUT = ROOT / "catalog.js"
 
+# Common filler words in Unicode/emoji names that add noise to search.
+KEYWORD_STOPWORDS = {"with", "of", "the", "and"}
+
 
 def main() -> None:
     emoji_entries = parse_emoji(DATA / "emojis.txt")
@@ -186,6 +189,8 @@ def build_keywords(raw: str, extras: list[str]) -> list[str]:
 
     def add_token(token: str) -> None:
         lowered = token.lower()
+        if lowered in KEYWORD_STOPWORDS:
+            return
         if lowered and lowered not in seen:
             seen.add(lowered)
             keywords.append(lowered)
