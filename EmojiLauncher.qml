@@ -5378,36 +5378,37 @@ QtObject {
         return true;
     }
 
-    // Returns a sort score for an item (lower = better match)
+    // Returns a sort score for an item (higher = better match)
     function getMatchScore(name, character, keywords, lowerQuery, queryTokens, query) {
         if (!query)
-            return 1000;
+            return 0;
 
         const nameLower = String(name || "").toLowerCase();
         const keywordsLower = normalizeKeywords(keywords);
 
         if (character === query)
-            return 0;
+            return 5000;
+
+        let bestCost = 1000;
         if (nameLower === lowerQuery)
-            return 1;
+            bestCost = 1;
 
         for (let i = 0; i < keywordsLower.length; i++) {
             if (keywordsLower[i] === lowerQuery)
-                return 2 + i;
+                bestCost = Math.min(bestCost, 2 + i);
         }
 
-        let best = 1000;
         if (nameLower.startsWith(lowerQuery))
-            best = Math.min(best, 20);
+            bestCost = Math.min(bestCost, 20);
         else if (nameLower.includes(lowerQuery))
-            best = Math.min(best, 30);
+            bestCost = Math.min(bestCost, 30);
 
         for (let i = 0; i < keywordsLower.length; i++) {
             const keyword = keywordsLower[i];
             if (keyword.startsWith(lowerQuery))
-                best = Math.min(best, 24 + i);
+                bestCost = Math.min(bestCost, 24 + i);
             else if (keyword.includes(lowerQuery))
-                best = Math.min(best, 34 + i);
+                bestCost = Math.min(bestCost, 34 + i);
         }
 
         if (queryTokens.length > 1) {
@@ -5415,13 +5416,13 @@ QtObject {
             for (let i = 0; i < queryTokens.length; i++) {
                 const cost = tokenCost(queryTokens[i], nameLower, character, keywordsLower);
                 if (cost >= 100000)
-                    return 1000;
+                    return 1;
                 tokenAggregate += cost;
             }
-            best = Math.min(best, 60 + tokenAggregate);
+            bestCost = Math.min(bestCost, 60 + tokenAggregate);
         }
 
-        return best;
+        return Math.max(1, 5000 - bestCost);
     }
 
     function getItems(query) {
@@ -5429,7 +5430,7 @@ QtObject {
         const trimmedQuery = query ? query.trim() : "";
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
-        const NERDFONT_SCORE_PENALTY = 25;
+        const NERDFONT_SCORE_PENALTY = 200;
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
@@ -5474,7 +5475,7 @@ QtObject {
         }
 
         if (trimmedQuery.length > 0)
-            items.sort((a, b) => a._preScored - b._preScored);
+            items.sort((a, b) => b._preScored - a._preScored);
 
         return items.slice(0, 50);
     }
