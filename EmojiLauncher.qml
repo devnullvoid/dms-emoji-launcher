@@ -5429,6 +5429,7 @@ QtObject {
         const trimmedQuery = query ? query.trim() : "";
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
+        const NERDFONT_SCORE_PENALTY = 25;
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
@@ -5467,7 +5468,7 @@ QtObject {
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery)
+                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY)
                 });
             }
         }
