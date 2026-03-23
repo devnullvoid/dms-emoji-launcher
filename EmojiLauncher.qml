@@ -46,13 +46,8 @@ QtObject {
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
-        try {
-            const stored = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "[]");
-            const parsed = JSON.parse(stored);
-            recentEmojis = Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            recentEmojis = [];
-        }
+        var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
     }
 
     function loadBundledData() {
@@ -334,15 +329,17 @@ QtObject {
         return items.slice(0, 50);
     }
 
-    function trackRecentEmoji(char) {
+    function trackRecentEmoji(character) {
         var arr = recentEmojis.slice();
-        var idx = arr.indexOf(char);
+        var idx = arr.indexOf(character);
         if (idx !== -1)
             arr.splice(idx, 1);
-        arr.unshift(char);
-        recentEmojis = arr.slice(0, 20);
+        arr.unshift(character);
+        if (arr.length > 20)
+            arr.length = 20;
+        recentEmojis = arr;
         if (pluginService)
-            pluginService.savePluginData("emojiLauncher", "recentEmojis", JSON.stringify(recentEmojis));
+            pluginService.savePluginData("emojiLauncher", "recentEmojis", arr.join(","));
     }
 
     function executeItem(item) {
