@@ -18,6 +18,7 @@ QtObject {
     property var unicodeCharacters: DefaultData.getUnicodeEntries()
 
     property var nerdfontGlyphs: []
+    property var recentEmojis: []
 
     Component.onCompleted: {
         loadSettings();
@@ -45,6 +46,13 @@ QtObject {
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
+        try {
+            const stored = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "[]");
+            const parsed = JSON.parse(stored);
+            recentEmojis = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            recentEmojis = [];
+        }
     }
 
     function loadBundledData() {
@@ -260,10 +268,19 @@ QtObject {
 
     function getItems(query) {
         const items = [];
-        const trimmedQuery = query ? query.trim() : "";
+        const trimmedQuery = query ? query.trim().replace(/^\++/, "") : "";
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
+
+        const noQuery = trimmedQuery.length === 0;
+
+        function recentBoost(char) {
+            if (!noQuery)
+                return 0;
+            const idx = recentEmojis.indexOf(char);
+            return idx >= 0 ? Math.max(0, 3000 - idx * 100) : 0;
+        }
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
@@ -274,7 +291,7 @@ QtObject {
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)
+                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery) + recentBoost(emoji.emoji)
                 });
             }
         }
@@ -288,7 +305,7 @@ QtObject {
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)
+                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery) + recentBoost(unicode.char)
                 });
             }
         }
@@ -302,15 +319,25 @@ QtObject {
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY)
+                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY) + recentBoost(glyph.char)
                 });
             }
         }
 
-        if (trimmedQuery.length > 0)
-            items.sort((a, b) => b._preScored - a._preScored);
+        items.sort((a, b) => b._preScored - a._preScored);
 
         return items.slice(0, 50);
+    }
+
+    function trackRecentEmoji(char) {
+        let arr = recentEmojis.slice();
+        const idx = arr.indexOf(char);
+        if (idx !== -1)
+            arr.splice(idx, 1);
+        arr.unshift(char);
+        recentEmojis = arr.slice(0, 20);
+        if (pluginService)
+            pluginService.savePluginData("emojiLauncher", "recentEmojis", JSON.stringify(recentEmojis));
     }
 
     function executeItem(item) {
@@ -330,6 +357,7 @@ QtObject {
         case "copy":
             Quickshell.execDetached(["sh", "-c", copyCommand, "copy", actionData]);
             ToastService?.showInfo("Copied " + actionData + " to clipboard");
+            trackRecentEmoji(actionData);
             break;
         }
     }
