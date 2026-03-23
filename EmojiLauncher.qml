@@ -273,25 +273,30 @@ QtObject {
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
 
-        const noQuery = trimmedQuery.length === 0;
+        const SKIN_TONE_PENALTY = 200;
 
-        function recentBoost(char) {
-            if (!noQuery)
-                return 0;
-            const idx = recentEmojis.indexOf(char);
-            return idx >= 0 ? Math.max(0, 3000 - idx * 100) : 0;
+        // Build a recent-emoji boost map (only when no query — surfaces recently used first)
+        const recentScores = {};
+        if (trimmedQuery.length === 0) {
+            for (let r = 0; r < recentEmojis.length; r++) {
+                recentScores[recentEmojis[r]] = Math.max(0, 3000 - r * 100);
+            }
         }
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
             if (entryMatchesQuery(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)) {
+                let score = getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery);
+                if (emoji.name.toLowerCase().includes("skin tone"))
+                    score = Math.max(1, score - SKIN_TONE_PENALTY);
+                score += recentScores[emoji.emoji] || 0;
                 items.push({
                     name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery) + recentBoost(emoji.emoji)
+                    _preScored: score
                 });
             }
         }
@@ -305,7 +310,7 @@ QtObject {
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery) + recentBoost(unicode.char)
+                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery) + (recentScores[unicode.char] || 0)
                 });
             }
         }
@@ -319,7 +324,7 @@ QtObject {
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY) + recentBoost(glyph.char)
+                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY) + (recentScores[glyph.char] || 0)
                 });
             }
         }
@@ -330,8 +335,8 @@ QtObject {
     }
 
     function trackRecentEmoji(char) {
-        let arr = recentEmojis.slice();
-        const idx = arr.indexOf(char);
+        var arr = recentEmojis.slice();
+        var idx = arr.indexOf(char);
         if (idx !== -1)
             arr.splice(idx, 1);
         arr.unshift(char);
