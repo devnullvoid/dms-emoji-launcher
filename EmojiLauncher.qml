@@ -18,6 +18,7 @@ QtObject {
     property var unicodeCharacters: DefaultData.getUnicodeEntries()
 
     property var nerdfontGlyphs: []
+    property var recentEmojis: []
 
     Component.onCompleted: {
         loadSettings();
@@ -45,6 +46,8 @@ QtObject {
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
+        var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
     }
 
     function loadBundledData() {
@@ -260,21 +263,45 @@ QtObject {
 
     function getItems(query) {
         const items = [];
-        const trimmedQuery = query ? query.trim() : "";
+        const trimmedQuery = query ? query.trim().replace(/^\++/, "") : "";
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
+        const SKIN_TONE_PENALTY = 200;
+
+        // Build a recent-character lookup map (no-query only).
+        // Scores > 900 are picked up by DMS's Scorer even for no-query,
+        // while undefined _preScored lets DMS use its own default (900).
+        const recentMap = {};
+        if (trimmedQuery.length === 0 && pluginService) {
+            const storedR = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+            if (storedR && storedR.length > 0) {
+                const storedArr = storedR.split(",");
+                for (let r = 0; r < storedArr.length; r++) {
+                    if (storedArr[r] && recentMap[storedArr[r]] === undefined)
+                        recentMap[storedArr[r]] = Math.max(0, 3000 - r * 100);
+                }
+            }
+        }
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
             if (entryMatchesQuery(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)) {
+                let score = getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery);
+                if (score > 0 && emoji.name.toLowerCase().includes("skin tone"))
+                    score = Math.max(1, score - SKIN_TONE_PENALTY);
+                const recentBoost = recentMap[emoji.emoji];
+                // For no-query: only set _preScored on recently-used items (>900 so DMS
+                // Scorer picks it up). Non-recent items leave _preScored undefined so DMS
+                // uses its own typeBonus (900). For queries: always set _preScored.
                 items.push({
                     name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)
+                    _preScored: trimmedQuery.length > 0 ? score : recentBoost,
+                    _idx: items.length
                 });
             }
         }
@@ -282,13 +309,15 @@ QtObject {
         for (let i = 0; i < unicodeCharacters.length; i++) {
             const unicode = unicodeCharacters[i];
             if (entryMatchesQuery(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)) {
+                const recentBoost = recentMap[unicode.char];
                 items.push({
                     name: unicode.name,
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)
+                    _preScored: trimmedQuery.length > 0 ? getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery) : recentBoost,
+                    _idx: items.length
                 });
             }
         }
@@ -296,21 +325,49 @@ QtObject {
         for (let i = 0; i < nerdfontGlyphs.length; i++) {
             const glyph = nerdfontGlyphs[i];
             if (entryMatchesQuery(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery)) {
+                let nfScore = getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery);
+                if (nfScore > 0)
+                    nfScore = Math.max(1, nfScore - NERDFONT_SCORE_PENALTY);
+                const recentBoost = recentMap[glyph.char];
                 items.push({
                     name: glyph.name + " (Nerd Font)",
                     comment: glyph.keywords.join(", "),
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: Math.max(1, getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery) - NERDFONT_SCORE_PENALTY)
+                    _preScored: trimmedQuery.length > 0 ? nfScore : recentBoost,
+                    _idx: items.length
                 });
             }
         }
 
-        if (trimmedQuery.length > 0)
-            items.sort((a, b) => b._preScored - a._preScored);
+        // Sort when there's a query or when recent items exist.
+        // Recently-used items have _preScored set (3000-2600); others have undefined.
+        // The sort ensures recently-used items land in the slice(0,50) regardless
+        // of their position in the database. DMS then re-ranks using _preScored.
+        const hasRecent = Object.keys(recentMap).length > 0;
+        if (trimmedQuery.length > 0 || hasRecent) {
+            items.sort((a, b) => {
+                const as = a._preScored !== undefined ? a._preScored : 0;
+                const bs = b._preScored !== undefined ? b._preScored : 0;
+                return bs - as || a._idx - b._idx;
+            });
+        }
 
         return items.slice(0, 50);
+    }
+
+    function trackRecentEmoji(character) {
+        var arr = recentEmojis.slice();
+        var idx = arr.indexOf(character);
+        if (idx !== -1)
+            arr.splice(idx, 1);
+        arr.unshift(character);
+        if (arr.length > 20)
+            arr.length = 20;
+        recentEmojis = arr;
+        if (pluginService)
+            pluginService.savePluginData("emojiLauncher", "recentEmojis", arr.join(","));
     }
 
     function executeItem(item) {
@@ -330,6 +387,7 @@ QtObject {
         case "copy":
             Quickshell.execDetached(["sh", "-c", copyCommand, "copy", actionData]);
             ToastService?.showInfo("Copied " + actionData + " to clipboard");
+            trackRecentEmoji(actionData);
             break;
         }
     }
