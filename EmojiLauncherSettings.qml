@@ -45,6 +45,21 @@ PluginSettings {
         defaultValue: ":e"
     }
 
+    SelectionSetting {
+        settingKey: "defaultSkinTone"
+        label: "Default Skin Tone"
+        description: "Preferred skin tone shown first for people and hand emojis. Other tones remain available below."
+        defaultValue: ""
+        options: [
+            { label: "None (yellow)",      value: "" },
+            { label: "\uD83C\uDFFB Light",        value: "\uD83C\uDFFB" },
+            { label: "\uD83C\uDFFC Medium-Light",  value: "\uD83C\uDFFC" },
+            { label: "\uD83C\uDFFD Medium",        value: "\uD83C\uDFFD" },
+            { label: "\uD83C\uDFFE Medium-Dark",   value: "\uD83C\uDFFE" },
+            { label: "\uD83C\uDFFF Dark",          value: "\uD83C\uDFFF" }
+        ]
+    }
+
     Rectangle {
         width: parent.width
         height: 1

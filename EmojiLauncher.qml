@@ -11,6 +11,7 @@ QtObject {
     property string trigger: ":e"
     property bool pasteOnSelect: false
     property bool useDMS: true
+    property string defaultSkinTone: ""
 
     signal itemsChanged
 
@@ -48,6 +49,7 @@ QtObject {
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
         var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
         recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
+        defaultSkinTone = pluginService.loadPluginData("emojiLauncher", "defaultSkinTone", "");
     }
 
     function loadBundledData() {
@@ -268,6 +270,8 @@ QtObject {
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
         const SKIN_TONE_PENALTY = 200;
+        const SKIN_TONE_BOOST = 300;
+        const SKIN_MODIFIERS = ["\uD83C\uDFFB", "\uD83C\uDFFC", "\uD83C\uDFFD", "\uD83C\uDFFE", "\uD83C\uDFFF"];
 
         // Build a recent-character lookup map (no-query only).
         // Scores > 900 are picked up by DMS's Scorer even for no-query,
@@ -288,19 +292,28 @@ QtObject {
             const emoji = emojiDatabase[i];
             if (entryMatchesQuery(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)) {
                 let score = getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery);
-                if (score > 0 && emoji.name.toLowerCase().includes("skin tone"))
-                    score = Math.max(1, score - SKIN_TONE_PENALTY);
+                const isSkinToneVariant = emoji.name.toLowerCase().includes("skin tone");
+                if (score > 0 && isSkinToneVariant) {
+                    const isPreferred = defaultSkinTone.length > 0
+                        && emoji.emoji.includes(defaultSkinTone)
+                        && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && emoji.emoji.includes(m));
+                    score = isPreferred ? score + SKIN_TONE_BOOST : Math.max(1, score - SKIN_TONE_PENALTY);
+                }
                 const recentBoost = recentMap[emoji.emoji];
-                // For no-query: only set _preScored on recently-used items (>900 so DMS
-                // Scorer picks it up). Non-recent items leave _preScored undefined so DMS
-                // uses its own typeBonus (900). For queries: always set _preScored.
+                // For no-query: preferred single-modifier skin tone variants get _preScored=1200
+                // (>900 threshold) so DMS floats them above the yellow base (900). Recently-used
+                // items take priority. Non-preferred items leave _preScored undefined (DMS: 900).
+                const skinToneBoost = (trimmedQuery.length === 0 && isSkinToneVariant
+                    && defaultSkinTone.length > 0 && emoji.emoji.includes(defaultSkinTone)
+                    && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && emoji.emoji.includes(m)))
+                    ? 1200 : undefined;
                 items.push({
                     name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: trimmedQuery.length > 0 ? score : recentBoost,
+                    _preScored: trimmedQuery.length > 0 ? score : (recentBoost !== undefined ? recentBoost : skinToneBoost),
                     _idx: items.length
                 });
             }
@@ -346,7 +359,8 @@ QtObject {
         // The sort ensures recently-used items land in the slice(0,50) regardless
         // of their position in the database. DMS then re-ranks using _preScored.
         const hasRecent = Object.keys(recentMap).length > 0;
-        if (trimmedQuery.length > 0 || hasRecent) {
+        const hasSkinTonePref = defaultSkinTone.length > 0;
+        if (trimmedQuery.length > 0 || hasRecent || hasSkinTonePref) {
             items.sort((a, b) => {
                 const as = a._preScored !== undefined ? a._preScored : 0;
                 const bs = b._preScored !== undefined ? b._preScored : 0;
