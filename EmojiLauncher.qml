@@ -390,16 +390,20 @@ QtObject {
         const actionParts = item.action.split(":");
         const actionType = actionParts[0];
         const actionData = actionParts.slice(1).join(":");
+        // setsid decouples dms cl copy from the parent process group so it is
+        // not killed when the launcher window closes (unlike wl-copy, dms cl copy
+        // does not self-daemonize and relies on staying alive to own the clipboard).
         const copyCommand = useDMS
-            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
+            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | setsid dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
             : "printf '%s' \"$1\" | wl-copy";
-
-        if (pasteOnSelect)
-            Quickshell.execDetached(["wtype", actionData]);
 
         switch (actionType) {
         case "copy":
             Quickshell.execDetached(["sh", "-c", copyCommand, "copy", actionData]);
+            // Delay wtype so the launcher has time to close and the previously
+            // focused window can regain focus before characters are typed.
+            if (pasteOnSelect)
+                Quickshell.execDetached(["sh", "-c", "sleep 0.15 && wtype \"$1\"", "paste", actionData]);
             ToastService?.showInfo("Copied " + actionData + " to clipboard");
             trackRecentEmoji(actionData);
             break;
@@ -421,7 +425,7 @@ QtObject {
             return null;
 
         const copyCommand = useDMS
-            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
+            ? "if command -v dms >/dev/null 2>&1; then printf '%s' \"$1\" | setsid dms cl copy; else printf '%s' \"$1\" | wl-copy; fi"
             : "printf '%s' \"$1\" | wl-copy";
 
         return ["sh", "-c", copyCommand, "copy", text];
