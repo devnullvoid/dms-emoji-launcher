@@ -97,6 +97,21 @@ PluginSettings {
         opacity: 0.3
     }
 
+    ToggleSetting {
+        id: hideResultsOnEmptyQueryToggle
+        settingKey: "hideResultsOnEmptyQuery"
+        label: "Hide Results on Empty Query"
+        description: value ? "Show nothing until you start typing a search term." : "Show all matching entries when the launcher is triggered with no search term."
+        defaultValue: false
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 1
+        color: Theme.outline
+        opacity: 0.3
+    }
+
     StyledText {
         width: parent.width
         text: "Features"

@@ -12,6 +12,7 @@ QtObject {
     property bool pasteOnSelect: false
     property bool useDMS: true
     property string defaultSkinTone: ""
+    property bool hideResultsOnEmptyQuery: false
 
     signal itemsChanged
 
@@ -50,6 +51,7 @@ QtObject {
         var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
         recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
         defaultSkinTone = pluginService.loadPluginData("emojiLauncher", "defaultSkinTone", "");
+        hideResultsOnEmptyQuery = pluginService.loadPluginData("emojiLauncher", "hideResultsOnEmptyQuery", false);
     }
 
     function loadBundledData() {
@@ -266,6 +268,8 @@ QtObject {
     function getItems(query) {
         const items = [];
         const trimmedQuery = query ? query.trim().replace(/^\++/, "") : "";
+        if (trimmedQuery.length === 0 && hideResultsOnEmptyQuery)
+            return [];
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
@@ -448,5 +452,11 @@ QtObject {
         if (!pluginService)
             return;
         pluginService.savePluginData("emojiLauncher", "useDMS", useDMS);
+    }
+
+    onHideResultsOnEmptyQueryChanged: {
+        if (!pluginService)
+            return;
+        pluginService.savePluginData("emojiLauncher", "hideResultsOnEmptyQuery", hideResultsOnEmptyQuery);
     }
 }
