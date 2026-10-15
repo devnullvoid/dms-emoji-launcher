@@ -12,10 +12,13 @@ A DankMaterialShell launcher plugin that provides quick access to thousands of e
 - **Nerd Font Glyphs** - Searchable Nerd Font icons for launcher, terminal, and code workflows
 - **Instant Copy** - One-click copy to clipboard with visual confirmation
 - **Smart Search** - Search by name, character, or keywords with tokenized multi-word matching (for example: `french e`, `latin tilde n`)
+- **Fast Empty Searches** - Blank or whitespace-only input reuses a bounded 50-item list, preserving recent-character and preferred-skin-tone ordering
 - **Configurable Trigger** - Default `:e` or set your own trigger
 - **Toast Notifications** - Visual feedback for every action
 
 ## Installation
+
+For development, `node --test tests/empty-query.test.cjs` runs isolated Quickshell checks against the bundled catalog, including ranking, settings changes, cache invalidation, and bounded work for empty searches. It does not touch the clipboard or reload DMS.
 
 ### From Plugin Registry (Recommended)
 ```bash

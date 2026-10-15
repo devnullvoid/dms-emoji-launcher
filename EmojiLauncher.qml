@@ -20,6 +20,12 @@ QtObject {
 
     property var nerdfontGlyphs: []
     property var recentEmojis: []
+    property var emptyQueryCache: null
+    property string emptyQueryCacheKey: ""
+
+    onEmojiDatabaseChanged: emptyQueryCache = null
+    onUnicodeCharactersChanged: emptyQueryCache = null
+    onNerdfontGlyphsChanged: emptyQueryCache = null
 
     Component.onCompleted: {
         loadSettings();
@@ -60,6 +66,7 @@ QtObject {
         if (glyphs.length > 0) {
             nerdfontGlyphs = glyphs;
         }
+        emptyQueryCache = null;
         itemsChanged();
     }
 
@@ -263,30 +270,81 @@ QtObject {
         return Math.max(1, 5000 - bestCost);
     }
 
+    function getEmptyQueryItems() {
+        const cacheKey = JSON.stringify([recentEmojis, defaultSkinTone]);
+        if (emptyQueryCache === null || emptyQueryCacheKey !== cacheKey) {
+            const recentMap = {};
+            for (let i = 0; i < recentEmojis.length; i++) {
+                const character = recentEmojis[i];
+                if (character && recentMap[character] === undefined)
+                    recentMap[character] = Math.max(0, 3000 - i * 100);
+            }
+            const skinModifiers = ["\uD83C\uDFFB", "\uD83C\uDFFC", "\uD83C\uDFFD", "\uD83C\uDFFE", "\uD83C\uDFFF"];
+            const ranked = [];
+            const needsRanking = recentEmojis.length > 0 || defaultSkinTone.length > 0;
+
+            function consider(entry, character, nerdFont, index, emoji) {
+                let score = recentMap[character];
+                if (score === undefined && emoji && defaultSkinTone.length > 0
+                        && character.includes(defaultSkinTone)
+                        && entry.name.toLowerCase().includes("skin tone")
+                        && !skinModifiers.some(m => m !== defaultSkinTone && character.includes(m)))
+                    score = 1200;
+                const rank = score === undefined ? 0 : score;
+                // Keep at most 50 lightweight references. Constructing comments,
+                // actions and icons for the entire catalog blocks the QML thread.
+                if (ranked.length === 50 && rank <= ranked[49].rank)
+                    return;
+                let position = ranked.length;
+                while (position > 0 && rank > ranked[position - 1].rank)
+                    position--;
+                ranked.splice(position, 0, {entry: entry, character: character, nerdFont: nerdFont,
+                                           index: index, score: score, rank: rank});
+                if (ranked.length > 50)
+                    ranked.pop();
+            }
+
+            const groups = [emojiDatabase, unicodeCharacters, nerdfontGlyphs];
+            let index = 0;
+            for (let group = 0; group < groups.length; group++) {
+                const entries = groups[group];
+                for (let i = 0; i < entries.length; i++, index++) {
+                    const entry = entries[i];
+                    consider(entry, group === 0 ? entry.emoji : entry.char, group === 2, index, group === 0);
+                    if (!needsRanking && ranked.length === 50)
+                        break;
+                }
+                if (!needsRanking && ranked.length === 50)
+                    break;
+            }
+
+            emptyQueryCache = ranked.map(candidate => ({
+                name: candidate.entry.name + (candidate.nerdFont ? " (Nerd Font)" : ""),
+                comment: candidate.entry.keywords.join(", "),
+                action: "copy:" + candidate.character,
+                icon: "unicode:" + candidate.character,
+                categories: ["Emoji & Unicode Launcher"],
+                _preScored: candidate.score,
+                _idx: candidate.index
+            }));
+            emptyQueryCacheKey = cacheKey;
+        }
+        // Return fresh result objects so launcher-side edits cannot corrupt
+        // subsequent searches. The retained cache is bounded to 50 items.
+        return emptyQueryCache.map(item => Object.assign({}, item, {categories: item.categories.slice()}));
+    }
+
     function getItems(query) {
         const items = [];
         const trimmedQuery = query ? query.trim().replace(/^\++/, "") : "";
+        if (trimmedQuery.length === 0)
+            return getEmptyQueryItems();
         const lowerQuery = trimmedQuery.toLowerCase();
         const queryTokens = tokenizeQuery(trimmedQuery);
         const NERDFONT_SCORE_PENALTY = 200;
         const SKIN_TONE_PENALTY = 200;
         const SKIN_TONE_BOOST = 300;
         const SKIN_MODIFIERS = ["\uD83C\uDFFB", "\uD83C\uDFFC", "\uD83C\uDFFD", "\uD83C\uDFFE", "\uD83C\uDFFF"];
-
-        // Build a recent-character lookup map (no-query only).
-        // Scores > 900 are picked up by DMS's Scorer even for no-query,
-        // while undefined _preScored lets DMS use its own default (900).
-        const recentMap = {};
-        if (trimmedQuery.length === 0 && pluginService) {
-            const storedR = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
-            if (storedR && storedR.length > 0) {
-                const storedArr = storedR.split(",");
-                for (let r = 0; r < storedArr.length; r++) {
-                    if (storedArr[r] && recentMap[storedArr[r]] === undefined)
-                        recentMap[storedArr[r]] = Math.max(0, 3000 - r * 100);
-                }
-            }
-        }
 
         for (let i = 0; i < emojiDatabase.length; i++) {
             const emoji = emojiDatabase[i];
@@ -299,21 +357,13 @@ QtObject {
                         && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && emoji.emoji.includes(m));
                     score = isPreferred ? score + SKIN_TONE_BOOST : Math.max(1, score - SKIN_TONE_PENALTY);
                 }
-                const recentBoost = recentMap[emoji.emoji];
-                // For no-query: preferred single-modifier skin tone variants get _preScored=1200
-                // (>900 threshold) so DMS floats them above the yellow base (900). Recently-used
-                // items take priority. Non-preferred items leave _preScored undefined (DMS: 900).
-                const skinToneBoost = (trimmedQuery.length === 0 && isSkinToneVariant
-                    && defaultSkinTone.length > 0 && emoji.emoji.includes(defaultSkinTone)
-                    && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && emoji.emoji.includes(m)))
-                    ? 1200 : undefined;
                 items.push({
                     name: emoji.name,
                     comment: emoji.keywords.join(", "),
                     action: "copy:" + emoji.emoji,
                     icon: "unicode:" + emoji.emoji,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: trimmedQuery.length > 0 ? score : (recentBoost !== undefined ? recentBoost : skinToneBoost),
+                    _preScored: score,
                     _idx: items.length
                 });
             }
@@ -322,14 +372,13 @@ QtObject {
         for (let i = 0; i < unicodeCharacters.length; i++) {
             const unicode = unicodeCharacters[i];
             if (entryMatchesQuery(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)) {
-                const recentBoost = recentMap[unicode.char];
                 items.push({
                     name: unicode.name,
                     comment: unicode.keywords.join(", "),
                     action: "copy:" + unicode.char,
                     icon: "unicode:" + unicode.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: trimmedQuery.length > 0 ? getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery) : recentBoost,
+                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery),
                     _idx: items.length
                 });
             }
@@ -341,32 +390,19 @@ QtObject {
                 let nfScore = getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery);
                 if (nfScore > 0)
                     nfScore = Math.max(1, nfScore - NERDFONT_SCORE_PENALTY);
-                const recentBoost = recentMap[glyph.char];
                 items.push({
                     name: glyph.name + " (Nerd Font)",
                     comment: glyph.keywords.join(", "),
                     action: "copy:" + glyph.char,
                     icon: "unicode:" + glyph.char,
                     categories: ["Emoji & Unicode Launcher"],
-                    _preScored: trimmedQuery.length > 0 ? nfScore : recentBoost,
+                    _preScored: nfScore,
                     _idx: items.length
                 });
             }
         }
 
-        // Sort when there's a query or when recent items exist.
-        // Recently-used items have _preScored set (3000-2600); others have undefined.
-        // The sort ensures recently-used items land in the slice(0,50) regardless
-        // of their position in the database. DMS then re-ranks using _preScored.
-        const hasRecent = Object.keys(recentMap).length > 0;
-        const hasSkinTonePref = defaultSkinTone.length > 0;
-        if (trimmedQuery.length > 0 || hasRecent || hasSkinTonePref) {
-            items.sort((a, b) => {
-                const as = a._preScored !== undefined ? a._preScored : 0;
-                const bs = b._preScored !== undefined ? b._preScored : 0;
-                return bs - as || a._idx - b._idx;
-            });
-        }
+        items.sort((a, b) => b._preScored - a._preScored || a._idx - b._idx);
 
         return items.slice(0, 50);
     }

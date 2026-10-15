@@ -6,7 +6,13 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 **Language**: QML (Qt Modeling Language) with Python build scripts
 **Type**: Launcher plugin for DankMaterialShell
 **Default Trigger**: `:e`
-**Version**: 1.5.2
+**Version**: 1.7.2
+
+## Recent Maintenance Notes (2026-10-14)
+
+- Empty and whitespace-only queries use `getEmptyQueryItems()` (#19). It retains only the best 50 candidates, builds comments/icons only for those candidates, and caches the resulting rows.
+- Recents and default-skin-tone settings are included in the cache key; catalog loading/replacement invalidates the cache. Keep catalog order, recent ranking, skin-tone preferences, and the 50-result limit consistent with normal launcher behavior.
+- Run `node --test tests/empty-query.test.cjs`. This loads the opaque generated catalog through QML, compares results against the pre-fix component at `8ff394e`, checks cache invalidation, and verifies bounded row construction. No clipboard commands or live DMS reloads occur.
 
 ## Recent Maintenance Notes (2026-03-01)
 - Bumped plugin version to `1.5.2` for search-quality improvements.
