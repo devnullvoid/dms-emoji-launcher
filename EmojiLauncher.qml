@@ -53,9 +53,22 @@ QtObject {
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
-        var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        var storedRecent = loadRecentEmojis();
         recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
         defaultSkinTone = pluginService.loadPluginData("emojiLauncher", "defaultSkinTone", "");
+    }
+
+    // Read recents from plugin state
+    function loadRecentEmojis() {
+        var stored = pluginService.loadPluginState("emojiLauncher", "recentEmojis", "");
+        if (stored.length > 0)
+            return stored;
+        var legacy = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        if (legacy.length > 0) {
+            pluginService.savePluginState("emojiLauncher", "recentEmojis", legacy);
+            pluginService.savePluginData("emojiLauncher", "recentEmojis", "");
+        }
+        return legacy;
     }
 
     function loadBundledData() {
@@ -417,7 +430,7 @@ QtObject {
             arr.length = 20;
         recentEmojis = arr;
         if (pluginService)
-            pluginService.savePluginData("emojiLauncher", "recentEmojis", arr.join(","));
+            pluginService.savePluginState("emojiLauncher", "recentEmojis", arr.join(","));
     }
 
     function executeItem(item) {

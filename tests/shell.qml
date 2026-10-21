@@ -8,15 +8,24 @@ ShellRoot {
     QtObject {
         id: settings
         property string recents: ""
+        property string stateRecents: ""
+        property int recentWrites: 0
         property string tone: ""
         signal pluginDataChanged(string pluginId)
+        function loadPluginState(pluginId, key, fallback) {
+            if (key === "recentEmojis") return stateRecents;
+            return fallback;
+        }
+        function savePluginState(pluginId, key, value) {
+            if (key === "recentEmojis") stateRecents = value;
+        }
         function loadPluginData(pluginId, key, fallback) {
             if (key === "recentEmojis") return recents;
             if (key === "defaultSkinTone") return tone;
             return fallback;
         }
         function savePluginData(pluginId, key, value) {
-            if (key === "recentEmojis") recents = value;
+            if (key === "recentEmojis") { recents = value; recentWrites++; }
             if (key === "defaultSkinTone") tone = value;
             pluginDataChanged(pluginId);
         }
@@ -56,6 +65,7 @@ ShellRoot {
             ];
             for (const scenario of scenarios) {
                 settings.recents = scenario.recents;
+                settings.stateRecents = scenario.recents;
                 settings.tone = scenario.tone;
                 settings.pluginDataChanged("emojiLauncher");
                 const expected = baseline.getItems("");
@@ -68,9 +78,18 @@ ShellRoot {
             result[0].name = "mutated by caller";
             result[0].categories.push("mutated");
             equal(current.getItems(""), baseline.getItems(""), "Cache isolation");
+            const recentWrites = settings.recentWrites;
             current.trackRecentEmoji(lastNerdFont);
             if (current.getItems("")[0].action !== "copy:" + lastNerdFont)
                 throw new Error("Recent selection did not invalidate the cache");
+            if (settings.stateRecents.split(",")[0] !== lastNerdFont || settings.recentWrites !== recentWrites)
+                throw new Error("Recent selection was not saved to plugin state");
+
+            settings.stateRecents = "";
+            settings.recents = "👍";
+            settings.pluginDataChanged("emojiLauncher");
+            if (settings.stateRecents !== "👍" || settings.recents !== "" || current.recentEmojis[0] !== "👍")
+                throw new Error("Recents in settings were not moved to plugin state");
 
             // Count expensive keyword-to-comment conversions using a small
             // synthetic catalog. Empty search should construct only 50 rows.
@@ -80,6 +99,7 @@ ShellRoot {
                 entries.push({emoji: "item-" + i, name: "Item " + i,
                               keywords: {join: function () { joins++; return "keyword"; }}});
             settings.recents = "";
+            settings.stateRecents = "";
             settings.pluginDataChanged("emojiLauncher");
             current.emojiDatabase = entries;
             current.unicodeCharacters = [];
@@ -89,7 +109,7 @@ ShellRoot {
             current.getItems(" ");
             if (joins !== 50)
                 throw new Error("Repeated whitespace input rebuilt catalog rows");
-            console.log("PASS: blank-query ordering, recents, skin tones, search, cache invalidation and bounded work");
+            console.log("PASS: blank-query ordering, recents, skin tones, search, cache invalidation, recents migration and bounded work");
             Qt.exit(0);
         } catch (error) {
             console.error("FAIL: " + error.message);

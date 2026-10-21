@@ -6,7 +6,12 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 **Language**: QML (Qt Modeling Language) with Python build scripts
 **Type**: Launcher plugin for DankMaterialShell
 **Default Trigger**: `:e`
-**Version**: 1.7.2
+**Version**: 1.7.3
+
+## Recent Maintenance Notes (2026-10-21)
+
+- Recently used characters are stored with `savePluginState` (DMS's per-plugin state file), not `savePluginData`, so selecting a character no longer rewrites `plugin_settings.json` (#18).
+- `loadRecentEmojis()` moves a value still found in settings into state once, then clears it from settings.
 
 ## Recent Maintenance Notes (2026-10-14)
 
