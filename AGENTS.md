@@ -11,7 +11,8 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 ## Recent Maintenance Notes (2026-10-21)
 
 - Recently used characters are stored with `savePluginState` (DMS's per-plugin state file), not `savePluginData`, so selecting a character no longer rewrites `plugin_settings.json` (#18).
-- `loadRecentEmojis()` moves a value still found in settings into state once, then clears it from settings.
+- `loadRecentEmojis()` copies legacy recents into state once without modifying settings. A null default identifies missing state; an intentionally empty state value must never restore legacy recents.
+- `node --test tests/*.test.cjs` includes focused migration checks and the catalog integration suite. The latter writes an isolated result marker rather than relying on Quickshell console output reaching stdout.
 
 ## Recent Maintenance Notes (2026-10-14)
 

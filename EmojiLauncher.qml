@@ -58,16 +58,14 @@ QtObject {
         defaultSkinTone = pluginService.loadPluginData("emojiLauncher", "defaultSkinTone", "");
     }
 
-    // Read recents from plugin state
+    // Migrate once without writing settings, which may be Nix-managed/read-only.
     function loadRecentEmojis() {
-        var stored = pluginService.loadPluginState("emojiLauncher", "recentEmojis", "");
-        if (stored.length > 0)
+        var stored = pluginService.loadPluginState("emojiLauncher", "recentEmojis", null);
+        // An empty string is valid state, not a reason to restore legacy recents.
+        if (stored !== null)
             return stored;
         var legacy = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
-        if (legacy.length > 0) {
-            pluginService.savePluginState("emojiLauncher", "recentEmojis", legacy);
-            pluginService.savePluginData("emojiLauncher", "recentEmojis", "");
-        }
+        pluginService.savePluginState("emojiLauncher", "recentEmojis", legacy);
         return legacy;
     }
 

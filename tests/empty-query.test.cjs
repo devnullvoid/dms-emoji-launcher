@@ -19,11 +19,13 @@ test('empty-query fast path preserves catalog results and bounds work', () => {
         fs.writeFileSync(path.join(fixture, 'Services/ToastService.qml'), 'pragma Singleton\nimport QtQuick\nQtObject { function showInfo(message) {} }\n');
         const result = spawnSync('qs', ['-p', path.join(fixture, 'shell.qml')], {
             encoding: 'utf8', timeout: 120000,
-            env: {...process.env, QT_QPA_PLATFORM: 'offscreen'},
+            env: {...process.env, QT_QPA_PLATFORM: 'offscreen', DMS_EMOJI_TEST_RESULT: path.join(fixture, 'result.txt')},
         });
         assert.ifError(result.error);
         assert.equal(result.status, 0, result.stdout + result.stderr);
-        assert.match(result.stdout + result.stderr, /PASS: blank-query ordering/);
+        // Some Quickshell installations route console.log away from stdout.
+        // Require a success marker as well as exit 0, independently of logging.
+        assert.equal(fs.readFileSync(path.join(fixture, 'result.txt'), 'utf8'), 'passed');
         console.log((result.stdout + result.stderr).split('\n').filter(line => line.includes('BENCH:')).join('\n'));
     } finally {
         fs.rmSync(fixture, {recursive: true});
