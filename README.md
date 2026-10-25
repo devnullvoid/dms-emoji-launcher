@@ -2,6 +2,8 @@
 
 A DankMaterialShell launcher plugin that provides quick access to thousands of emojis, mathematical symbols, and Nerd Font glyphs with instant clipboard copying.
 
+Recently used characters are stored in DMS's plugin state file, keeping `plugin_settings.json` unchanged when selecting characters. Existing recents are copied from settings once; the legacy setting is left untouched so migration also works with read-only Nix-managed configuration. An intentionally empty state value takes precedence over legacy recents.
+
 ![Emoji & Unicode Launcher Screenshot](screenshot.png)
 
 ## Features
@@ -19,6 +21,8 @@ A DankMaterialShell launcher plugin that provides quick access to thousands of e
 ## Installation
 
 For development, `node --test tests/empty-query.test.cjs` runs isolated Quickshell checks against the bundled catalog, including ranking, settings changes, cache invalidation, and bounded work for empty searches. It does not touch the clipboard or reload DMS.
+
+Run `node --test tests/*.test.cjs` to include read-only migration and empty-state regression checks. The Quickshell test uses a result file to confirm completion independently of console logging.
 
 ### From Plugin Registry (Recommended)
 ```bash

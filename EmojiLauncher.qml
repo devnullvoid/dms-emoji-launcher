@@ -53,9 +53,20 @@ QtObject {
         trigger = pluginService.loadPluginData("emojiLauncher", "trigger", ":e");
         pasteOnSelect = pluginService.loadPluginData("emojiLauncher", "pasteOnSelect", false);
         useDMS = pluginService.loadPluginData("emojiLauncher", "useDMS", true);
-        var storedRecent = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        var storedRecent = loadRecentEmojis();
         recentEmojis = storedRecent.length > 0 ? storedRecent.split(",") : [];
         defaultSkinTone = pluginService.loadPluginData("emojiLauncher", "defaultSkinTone", "");
+    }
+
+    // Migrate once without writing settings, which may be Nix-managed/read-only.
+    function loadRecentEmojis() {
+        var stored = pluginService.loadPluginState("emojiLauncher", "recentEmojis", null);
+        // An empty string is valid state, not a reason to restore legacy recents.
+        if (stored !== null)
+            return stored;
+        var legacy = pluginService.loadPluginData("emojiLauncher", "recentEmojis", "");
+        pluginService.savePluginState("emojiLauncher", "recentEmojis", legacy);
+        return legacy;
     }
 
     function loadBundledData() {
@@ -417,7 +428,7 @@ QtObject {
             arr.length = 20;
         recentEmojis = arr;
         if (pluginService)
-            pluginService.savePluginData("emojiLauncher", "recentEmojis", arr.join(","));
+            pluginService.savePluginState("emojiLauncher", "recentEmojis", arr.join(","));
     }
 
     function executeItem(item) {
