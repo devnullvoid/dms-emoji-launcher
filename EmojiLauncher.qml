@@ -22,10 +22,12 @@ QtObject {
     property var recentEmojis: []
     property var emptyQueryCache: null
     property string emptyQueryCacheKey: ""
+    // Lowercase search fields per catalog entry, built on the first search.
+    property var searchIndex: null
 
-    onEmojiDatabaseChanged: emptyQueryCache = null
-    onUnicodeCharactersChanged: emptyQueryCache = null
-    onNerdfontGlyphsChanged: emptyQueryCache = null
+    onEmojiDatabaseChanged: invalidateCaches()
+    onUnicodeCharactersChanged: invalidateCaches()
+    onNerdfontGlyphsChanged: invalidateCaches()
 
     Component.onCompleted: {
         loadSettings();
@@ -77,8 +79,13 @@ QtObject {
         if (glyphs.length > 0) {
             nerdfontGlyphs = glyphs;
         }
-        emptyQueryCache = null;
+        invalidateCaches();
         itemsChanged();
+    }
+
+    function invalidateCaches() {
+        emptyQueryCache = null;
+        searchIndex = null;
     }
 
     function mergeEntries(target, additions, keyField) {
@@ -209,24 +216,41 @@ QtObject {
         return best;
     }
 
-    function entryMatchesQuery(name, character, keywords, lowerQuery, queryTokens, query) {
-        if (!query)
-            return true;
-
-        const nameLower = String(name || "").toLowerCase();
-        const keywordsLower = normalizeKeywords(keywords);
-
-        if (nameLower.includes(lowerQuery) || character.includes(query))
-            return true;
-
-        for (let i = 0; i < keywordsLower.length; i++) {
-            if (keywordsLower[i].includes(lowerQuery))
-                return true;
+    // One string per entry answers most queries with a single search. Catalog keywords are
+    // already lowercase, so the entry's own list is kept unless normalizing changed it.
+    function buildSearchIndex() {
+        const haystacks = [];
+        const keywordLists = [];
+        const groups = [emojiDatabase, unicodeCharacters, nerdfontGlyphs];
+        for (let group = 0; group < groups.length; group++) {
+            const entries = groups[group];
+            for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i];
+                const lowered = normalizeKeywords(entry.keywords);
+                const unchanged = Array.isArray(entry.keywords) && lowered.every((keyword, j) => keyword === entry.keywords[j]);
+                keywordLists.push(unchanged ? entry.keywords : lowered);
+                haystacks.push(String(entry.name || "").toLowerCase() + "\n" + lowered.join("\n"));
+            }
         }
+        searchIndex = {haystacks: haystacks, keywordLists: keywordLists};
+    }
+
+    function entryMatchesQuery(haystack, character, keywordsLower, lowerQuery, queryTokens, query) {
+        // Fields are joined by newlines, which a query never contains.
+        if (haystack.includes(lowerQuery) || character.includes(query))
+            return true;
 
         if (queryTokens.length <= 1)
             return false;
 
+        // Every token has to appear in some field or be the character itself.
+        const characterLower = character.toLowerCase();
+        for (let i = 0; i < queryTokens.length; i++) {
+            if (!haystack.includes(queryTokens[i]) && characterLower !== queryTokens[i])
+                return false;
+        }
+
+        const nameLower = haystack.substring(0, haystack.indexOf("\n"));
         for (let i = 0; i < queryTokens.length; i++) {
             if (tokenCost(queryTokens[i], nameLower, character, keywordsLower) >= 100000)
                 return false;
@@ -235,13 +259,7 @@ QtObject {
     }
 
     // Returns a sort score for an item (higher = better match)
-    function getMatchScore(name, character, keywords, lowerQuery, queryTokens, query) {
-        if (!query)
-            return 0;
-
-        const nameLower = String(name || "").toLowerCase();
-        const keywordsLower = normalizeKeywords(keywords);
-
+    function getMatchScore(nameLower, character, keywordsLower, lowerQuery, queryTokens, query) {
         if (character === query)
             return 5000;
 
@@ -346,7 +364,6 @@ QtObject {
     }
 
     function getItems(query) {
-        const items = [];
         const trimmedQuery = query ? query.trim().replace(/^\++/, "") : "";
         if (trimmedQuery.length === 0)
             return getEmptyQueryItems();
@@ -357,65 +374,59 @@ QtObject {
         const SKIN_TONE_BOOST = 300;
         const SKIN_MODIFIERS = ["\uD83C\uDFFB", "\uD83C\uDFFC", "\uD83C\uDFFD", "\uD83C\uDFFE", "\uD83C\uDFFF"];
 
-        for (let i = 0; i < emojiDatabase.length; i++) {
-            const emoji = emojiDatabase[i];
-            if (entryMatchesQuery(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery)) {
-                let score = getMatchScore(emoji.name, emoji.emoji, emoji.keywords, lowerQuery, queryTokens, trimmedQuery);
-                const isSkinToneVariant = emoji.name.toLowerCase().includes("skin tone");
-                if (score > 0 && isSkinToneVariant) {
+        if (searchIndex === null)
+            buildSearchIndex();
+        const haystacks = searchIndex.haystacks;
+        const keywordLists = searchIndex.keywordLists;
+
+        // Rank lightweight references and build rows for the 50 that are returned.
+        const ranked = [];
+        const groups = [emojiDatabase, unicodeCharacters, nerdfontGlyphs];
+        let index = 0;
+        let matched = 0;
+        for (let group = 0; group < groups.length; group++) {
+            const entries = groups[group];
+            for (let i = 0; i < entries.length; i++, index++) {
+                const entry = entries[i];
+                const character = group === 0 ? entry.emoji : entry.char;
+                const haystack = haystacks[index];
+                const keywordsLower = keywordLists[index];
+                if (!entryMatchesQuery(haystack, character, keywordsLower, lowerQuery, queryTokens, trimmedQuery))
+                    continue;
+
+                const nameLower = haystack.substring(0, haystack.indexOf("\n"));
+                let score = getMatchScore(nameLower, character, keywordsLower, lowerQuery, queryTokens, trimmedQuery);
+                if (group === 0 && score > 0 && nameLower.includes("skin tone")) {
                     const isPreferred = defaultSkinTone.length > 0
-                        && emoji.emoji.includes(defaultSkinTone)
-                        && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && emoji.emoji.includes(m));
+                        && character.includes(defaultSkinTone)
+                        && !SKIN_MODIFIERS.some(m => m !== defaultSkinTone && character.includes(m));
                     score = isPreferred ? score + SKIN_TONE_BOOST : Math.max(1, score - SKIN_TONE_PENALTY);
                 }
-                items.push({
-                    name: emoji.name,
-                    comment: emoji.keywords.join(", "),
-                    action: "copy:" + emoji.emoji,
-                    icon: "unicode:" + emoji.emoji,
-                    categories: ["Emoji & Unicode Launcher"],
-                    _preScored: score,
-                    _idx: items.length
-                });
+                if (group === 2 && score > 0)
+                    score = Math.max(1, score - NERDFONT_SCORE_PENALTY);
+
+                const order = matched++;
+                if (ranked.length === 50 && score <= ranked[49].score)
+                    continue;
+                let position = ranked.length;
+                while (position > 0 && score > ranked[position - 1].score)
+                    position--;
+                ranked.splice(position, 0, {entry: entry, character: character, nerdFont: group === 2,
+                                           score: score, order: order});
+                if (ranked.length > 50)
+                    ranked.pop();
             }
         }
 
-        for (let i = 0; i < unicodeCharacters.length; i++) {
-            const unicode = unicodeCharacters[i];
-            if (entryMatchesQuery(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery)) {
-                items.push({
-                    name: unicode.name,
-                    comment: unicode.keywords.join(", "),
-                    action: "copy:" + unicode.char,
-                    icon: "unicode:" + unicode.char,
-                    categories: ["Emoji & Unicode Launcher"],
-                    _preScored: getMatchScore(unicode.name, unicode.char, unicode.keywords, lowerQuery, queryTokens, trimmedQuery),
-                    _idx: items.length
-                });
-            }
-        }
-
-        for (let i = 0; i < nerdfontGlyphs.length; i++) {
-            const glyph = nerdfontGlyphs[i];
-            if (entryMatchesQuery(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery)) {
-                let nfScore = getMatchScore(glyph.name, glyph.char, glyph.keywords, lowerQuery, queryTokens, trimmedQuery);
-                if (nfScore > 0)
-                    nfScore = Math.max(1, nfScore - NERDFONT_SCORE_PENALTY);
-                items.push({
-                    name: glyph.name + " (Nerd Font)",
-                    comment: glyph.keywords.join(", "),
-                    action: "copy:" + glyph.char,
-                    icon: "unicode:" + glyph.char,
-                    categories: ["Emoji & Unicode Launcher"],
-                    _preScored: nfScore,
-                    _idx: items.length
-                });
-            }
-        }
-
-        items.sort((a, b) => b._preScored - a._preScored || a._idx - b._idx);
-
-        return items.slice(0, 50);
+        return ranked.map(candidate => ({
+            name: candidate.entry.name + (candidate.nerdFont ? " (Nerd Font)" : ""),
+            comment: candidate.entry.keywords.join(", "),
+            action: "copy:" + candidate.character,
+            icon: "unicode:" + candidate.character,
+            categories: ["Emoji & Unicode Launcher"],
+            _preScored: candidate.score,
+            _idx: candidate.order
+        }));
     }
 
     function trackRecentEmoji(character) {
