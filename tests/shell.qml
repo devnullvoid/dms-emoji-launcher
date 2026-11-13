@@ -83,8 +83,18 @@ ShellRoot {
                 equal(current.getItems(""), expected, "Blank query");
                 equal(current.getItems("  \t "), expected, "Whitespace query");
             }
-            for (const query of ["melting", "french e", "latin tilde n", "👍", "nerd"])
-                equal(current.getItems(query), baseline.getItems(query), "Search " + query);
+            let beforeSearchMs = 0;
+            let afterSearchMs = 0;
+            for (const query of ["melting", "french e", "latin tilde n", "👍", "nerd"]) {
+                start = Date.now();
+                const expected = baseline.getItems(query);
+                beforeSearchMs += Date.now() - start;
+                start = Date.now();
+                const actual = current.getItems(query);
+                afterSearchMs += Date.now() - start;
+                equal(actual, expected, "Search " + query);
+            }
+            console.log("BENCH: " + JSON.stringify({searchQueries: 5, beforeSearchMs: beforeSearchMs, afterSearchMs: afterSearchMs}));
             const result = current.getItems("");
             result[0].name = "mutated by caller";
             result[0].categories.push("mutated");
@@ -147,6 +157,22 @@ ShellRoot {
             current.getItems(" ");
             if (joins !== 50)
                 throw new Error("Repeated whitespace input rebuilt catalog rows");
+            joins = 0;
+            if (current.getItems("item").length !== 50 || joins !== 50)
+                throw new Error("Nonempty search constructed more than 50 rows");
+            const searchIndex = current.searchIndex;
+            current.getItems("item-1");
+            if (current.searchIndex !== searchIndex)
+                throw new Error("Warm searches rebuilt the search index");
+            current.emojiDatabase = [{emoji: "🔬", name: "Replacement", keywords: ["NEW", "search"]}];
+            if (current.searchIndex !== null || current.getItems("new")[0].action !== "copy:🔬")
+                throw new Error("Replacing emoji data did not invalidate the search index");
+            current.unicodeCharacters = [{char: "é", name: "Latin Small Letter E With Acute", keywords: ["French"]}];
+            if (current.searchIndex !== null || current.getItems("french e")[0].action !== "copy:é")
+                throw new Error("Replacing unicode data did not invalidate the search index");
+            current.nerdfontGlyphs = [{char: "\\", name: "Terminal", keywords: ["SHELL"]}];
+            if (current.searchIndex !== null || current.getItems("shell")[0].action !== "copy:\\")
+                throw new Error("Replacing Nerd Font data did not invalidate the search index");
             console.log("PASS: blank-query ordering, recents, skin tones, search, cache invalidation, recents migration and bounded work");
             completionFile.setText("passed");
             Qt.exit(0);

@@ -6,7 +6,13 @@ A DankMaterialShell (DMS) launcher plugin providing quick access to emojis, unic
 **Language**: QML (Qt Modeling Language) with Python build scripts
 **Type**: Launcher plugin for DankMaterialShell
 **Default Trigger**: `:e`
-**Version**: 1.7.3
+**Version**: 1.7.4
+
+## Recent Maintenance Notes (2026-11-13)
+
+- Nonempty queries reuse a lazy lowercase search index; catalog replacement and `loadBundledData()` invalidate both search and empty-query caches (#23).
+- Search ranks lightweight references and builds display rows only for the best 50 matches. Preserve catalog-order tie breaking, matching behavior, and skin-tone scoring.
+- `node --test tests/*.test.cjs` includes search equivalence against 1.7.3, top-50 construction, index reuse, and real QML invalidation checks for all three catalogs.
 
 ## Recent Maintenance Notes (2026-10-21)
 
